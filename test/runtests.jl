@@ -86,9 +86,13 @@ end
             D = nonlazy(A, B)
 
             # getindex
+            diff_at = []
             for i in 1:size(M, 1), j in 1:size(M, 2)
-                @test M[i, j] ≈ D[i, j]
+                if ! (M[i, j] ≈ D[i, j])
+                    push!(diff_at, (i, j))
+                end
             end
+            @test diff_at == []
 
             # convert
             TE = promote_type(eltype(A), eltype(B))
