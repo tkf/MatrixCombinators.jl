@@ -1,4 +1,4 @@
-# MatrixCombinators --- lazily add or multiply matrices
+# MatrixCombinators --- lazily add and multiply matrices
 
 [![Build Status][travis-img]][travis-url]
 [![Coverage Status][coveralls-img]][coveralls-url]
