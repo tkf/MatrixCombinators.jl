@@ -121,15 +121,19 @@ for (TY, TM, b_out) in
 end
 
 # MultipliedMatrices
-muled_ops = :(
+muled_ops_nt = :(
     Base.A_mul_B!,
     Base.A_mul_Bt!,
     Base.A_mul_Bc!,
 ).args
+muled_ops_tr = :(
+    Base.At_mul_B!, Base.At_mul_Bt!,
+    Base.Ac_mul_B!, Base.Ac_mul_Bc!,
+).args
 for (TY, TM, b_out) in
         [(AbstractMatrix, MulMatOut, :(M.b_out)),
          (AbstractVector, MultipliedMatrices, :(b_out_vec(M)))]
-    for f in muled_ops
+    for f in muled_ops_nt
         @eval function $f(Y::$TY, M::$TM, X)
             b_out = $b_out
             $f(b_out, M.B, X)
@@ -137,7 +141,22 @@ for (TY, TM, b_out) in
             return Y
         end
     end
+    for f in muled_ops_tr
+        g = Dict(
+            Base.At_mul_B!  => Base.At_mul_B!,
+            Base.At_mul_Bt! => Base.At_mul_B!,
+            Base.Ac_mul_B!  => Base.Ac_mul_B!,
+            Base.Ac_mul_Bc! => Base.Ac_mul_B!,
+        )[eval(f)]
+        @eval function $f(Y::$TY, M::$TM, X)
+            b_out = $b_out
+            $f(b_out, M.A, X)  # works only if A is square
+            $g(Y, M.B, b_out)
+            return Y
+        end
+    end
 end
+muled_ops = (muled_ops_nt..., muled_ops_tr...)
 
 function Base.:*(M::PairedMatrices, x::AbstractVector)
     y = similar(@view M.A[:, 1])
