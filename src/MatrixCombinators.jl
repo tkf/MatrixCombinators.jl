@@ -66,6 +66,7 @@ empty_array(::Type{<: SparseMatrixCSC{T}}, dims,) where {T} =
 Base.eltype(M::PairedMatrices) = promote_type(eltype(M.A),
                                               eltype(M.B),
                                               eltype(M.b_out))
+Base.length(M::PairedMatrices) = prod(size(M))
 
 Base.size(M::AddedMatrices, dim...) = size(M.A, dim...)
 Base.getindex(M::AddedMatrices, i::Int) = M.A[i] + M.B[i]

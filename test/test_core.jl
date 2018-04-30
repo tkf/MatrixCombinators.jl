@@ -132,6 +132,16 @@ end
             end
             @test diff_at == []
 
+            if IndexStyle(typeof(M)) isa IndexLinear
+                diff_at = []
+                for i in 1:length(M)
+                    if ! (M[i] ≈ D[i])
+                        push!(diff_at, i)
+                    end
+                end
+                @test diff_at == []
+            end
+
             # convert
             TE = promote_type(eltype(A), eltype(B))
             C = convert(Array{TE}, M)
