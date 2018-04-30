@@ -91,7 +91,8 @@ end
             end
 
             # convert
-            C = convert(Array, M)
+            TE = promote_type(eltype(A), eltype(B))
+            C = convert(Array{TE}, M)
             @test C ≈ D
 
             if ! (D isa Array)

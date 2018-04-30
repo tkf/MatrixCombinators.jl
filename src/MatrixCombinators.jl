@@ -63,6 +63,12 @@ preferred_style(::IndexStyle, ::IndexStyle) = IndexCartesian()
 Base.IndexStyle(::Type{<:AddedMatrices{TA, TB}}) where {TA, TB} =
     preferred_style(IndexStyle(TA), IndexStyle(TB))
 
+function Base.convert(T::Type{<: AbstractArray}, M::AddedMatrices)
+    Y = T(size(M))
+    @. Y = M.A + M.B
+    return Y
+end
+
 Base.size(M::MultipliedMatrices) = (size(M.A, 1), size(M.B, 2))
 
 # function Base.size(M::MultipliedMatrices, i::Integer)
@@ -81,9 +87,9 @@ end
 
 Base.IndexStyle(::Type{<:MultipliedMatrices}) = IndexCartesian()
 
-function Base.convert(T::Type{<: AbstractArray}, M::PairedMatrices)
-    Y = zeros(T, size(M))  # TODO: improve
-    A_mul_B!(Y, M, I)
+function Base.convert(T::Type{<: AbstractArray}, M::MultipliedMatrices)
+    Y = T(size(M))
+    A_mul_B!(Y, M.A, M.B)
     return Y
 end
 
