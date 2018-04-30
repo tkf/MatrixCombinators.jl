@@ -72,6 +72,22 @@ end
                 f(actual, M, X′)
 
                 @test actual ≈ desired
+
+                if ! (X isa AbstractVector)
+                    if f in (A_mul_Bt!, At_mul_Bt!, A_mul_Bc!, Ac_mul_Bc!)
+                        continue
+                    end
+
+                    v = X′[:, 1]
+
+                    desired = Array{TE}(size(A, 1))
+                    actual = similar(desired)
+
+                    f(desired, nonlazy(A, B), v)
+                    f(actual, M, v)
+
+                    @test actual ≈ desired
+                end
             end
         end
     end
