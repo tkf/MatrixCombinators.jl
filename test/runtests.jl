@@ -5,8 +5,10 @@ else
     using Test
 end
 
+range_mat(n = 3, m = n) = reshape(collect(1:n * m), (n, m))
+
 ab_arrays = let
-    A1 = reshape(collect(1:9), (3, 3))
+    A1 = range_mat()
 
     [
         A1,
@@ -103,6 +105,15 @@ end
                 C = convert(typeof(D), M)
                 @test C ≈ D
             end
+        end
+
+        for TA in [Int, Float64, Complex128],
+            TB in [Int, Float64, Complex128]
+
+            A = Array{TA}(range_mat())
+            B = Array{TB}(range_mat())
+            M = combinator(A, B)
+            @assert eltype(M) == promote_type(TA, TB)
         end
     end
 end

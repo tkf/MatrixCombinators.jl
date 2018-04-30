@@ -55,6 +55,10 @@ empty_array(::Type{<: SparseMatrixCSC{T}}, dims,) where {T} =
 # --- Array Interface
 # https://docs.julialang.org/en/stable/manual/interfaces/#man-interface-array-1
 
+Base.eltype(M::PairedMatrices) = promote_type(eltype(M.A),
+                                              eltype(M.B),
+                                              eltype(M.b_out))
+
 Base.size(M::AddedMatrices, dim...) = size(M.A, dim...)
 Base.getindex(M::AddedMatrices, i::Int) = M.A[i] + M.B[i]
 Base.getindex(M::AddedMatrices, I::Vararg{Int, N}) where N =
