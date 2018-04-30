@@ -76,6 +76,30 @@ end
         end
     end
 
+    @testset "*" begin
+        for A in a_arrays,
+            B in b_arrays
+
+            x_arrays = [
+                collect(1:size(B, 2)),
+                let N = size(B, 2)
+                    reshape(collect(1:N^2), (N, N))
+                end,
+            ]
+            # TODO: non-square matrix
+
+            D = nonlazy(A, B)
+            for X in x_arrays
+                b_out = B * X
+                M = combinator(A, B, b_out)
+
+                actual = M * X
+                desired = D * X
+                @test actual ≈ desired
+            end
+        end
+    end
+
     @testset "interface" begin
         for A in a_arrays,
             B in b_arrays
