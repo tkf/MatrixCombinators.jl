@@ -47,6 +47,10 @@ const MulMatOut{TA, TB} = MultipliedMatrices{TA, TB, <: AbstractMatrix}
 b_out_vec(M::PMMatOut) = @view M.b_out[:, 1]
 b_out_vec(M::PMVecOut) = M.b_out
 
+empty_array(::Type{T}, dims) where {T <: AbstractArray} = T(dims)
+empty_array(::Type{<: SparseMatrixCSC{T}}, dims,) where {T} =
+    spzeros(T, dims...)
+
 
 # --- Array Interface
 # https://docs.julialang.org/en/stable/manual/interfaces/#man-interface-array-1
@@ -64,20 +68,20 @@ Base.IndexStyle(::Type{<:AddedMatrices{TA, TB}}) where {TA, TB} =
     preferred_style(IndexStyle(TA), IndexStyle(TB))
 
 function Base.convert(T::Type{<: AbstractArray}, M::AddedMatrices)
-    Y = T(size(M))
+    Y = empty_array(T, size(M))
     @. Y = M.A + M.B
     return Y
 end
 
 Base.size(M::MultipliedMatrices) = (size(M.A, 1), size(M.B, 2))
 
-# function Base.size(M::MultipliedMatrices, i::Integer)
-#     if i == 1
-#         size(M.A, 1)
-#     elseif i  # what should happen when i > 2?
-#         size(M.B, i)
-#     else
-# end
+function Base.size(M::MultipliedMatrices, i::Integer)
+    if i == 1
+        size(M.A, 1)
+    else
+        size(M.B, i)  # if i > 2, this returns 1
+    end
+end
 
 function Base.getindex(M::MultipliedMatrices, i::Int, j::Int)
     x = spzeros(Int, size(M, 2))
@@ -88,7 +92,7 @@ end
 Base.IndexStyle(::Type{<:MultipliedMatrices}) = IndexCartesian()
 
 function Base.convert(T::Type{<: AbstractArray}, M::MultipliedMatrices)
-    Y = T(size(M))
+    Y = empty_array(T, size(M))
     A_mul_B!(Y, M.A, M.B)
     return Y
 end
