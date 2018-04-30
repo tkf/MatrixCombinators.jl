@@ -133,7 +133,7 @@ for (TY, TM, b_out) in
         @eval function $f(Y::$TY, M::$TM, X)
             b_out = $b_out
             $f(b_out, M.B, X)
-            $f(Y, M.A, b_out)
+            A_mul_B!(Y, M.A, b_out)
             return Y
         end
     end
