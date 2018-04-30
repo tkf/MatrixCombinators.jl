@@ -56,11 +56,21 @@ end
                 else
                     X′ = X
                 end
+                if X′ isa RowVector
+                    continue
+                end
+
                 b_out = B * X
                 M = combinator(A, B, b_out)
 
-                desired = nonlazy(A, B) * X
+                TE = promote_type(eltype(A), eltype(B), eltype(X))
+                desired = Array{TE}((size(A, 1), size(X′, 2)))
+                if X isa AbstractVector
+                    desired = desired[:, 1]
+                end
+
                 actual = similar(desired)
+                f(desired, nonlazy(A, B), X′)
                 f(actual, M, X′)
 
                 @test actual ≈ desired
