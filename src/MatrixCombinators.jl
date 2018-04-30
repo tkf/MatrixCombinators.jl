@@ -1,5 +1,13 @@
 module MatrixCombinators
 
+@static if VERSION < v"0.7.0-"
+    const LinearAlgebra = Base.LinAlg
+else
+    using LinearAlgebra
+end
+const A_mul_B! = LinearAlgebra.A_mul_B!
+
+
 abstract type PairedMatrices{TA, TB, BO} end
 
 struct AddedMatrices{TA, TB, BO} <: PairedMatrices{TA, TB, BO}
@@ -106,9 +114,9 @@ end
 
 # AddedMatrices
 added_ops = :(
-    Base.A_mul_B!,
-    Base.A_mul_Bt!, Base.At_mul_B!, Base.At_mul_Bt!,
-    Base.A_mul_Bc!, Base.Ac_mul_B!, Base.Ac_mul_Bc!,
+    LinearAlgebra.A_mul_B!,
+    LinearAlgebra.A_mul_Bt!, LinearAlgebra.At_mul_B!, LinearAlgebra.At_mul_Bt!,
+    LinearAlgebra.A_mul_Bc!, LinearAlgebra.Ac_mul_B!, LinearAlgebra.Ac_mul_Bc!,
 ).args
 for (TY, TM, b_out) in
         [(AbstractMatrix, AddMatOut, :(M.b_out)),
@@ -126,13 +134,13 @@ end
 
 # MultipliedMatrices
 muled_ops_nt = :(
-    Base.A_mul_B!,
-    Base.A_mul_Bt!,
-    Base.A_mul_Bc!,
+    LinearAlgebra.A_mul_B!,
+    LinearAlgebra.A_mul_Bt!,
+    LinearAlgebra.A_mul_Bc!,
 ).args
 muled_ops_tr = :(
-    Base.At_mul_B!, Base.At_mul_Bt!,
-    Base.Ac_mul_B!, Base.Ac_mul_Bc!,
+    LinearAlgebra.At_mul_B!, LinearAlgebra.At_mul_Bt!,
+    LinearAlgebra.Ac_mul_B!, LinearAlgebra.Ac_mul_Bc!,
 ).args
 for (TY, TM, b_out) in
         [(AbstractMatrix, MulMatOut, :(M.b_out)),
@@ -147,10 +155,10 @@ for (TY, TM, b_out) in
     end
     for f in muled_ops_tr
         g = Dict(
-            Base.At_mul_B!  => Base.At_mul_B!,
-            Base.At_mul_Bt! => Base.At_mul_B!,
-            Base.Ac_mul_B!  => Base.Ac_mul_B!,
-            Base.Ac_mul_Bc! => Base.Ac_mul_B!,
+            LinearAlgebra.At_mul_B!  => LinearAlgebra.At_mul_B!,
+            LinearAlgebra.At_mul_Bt! => LinearAlgebra.At_mul_B!,
+            LinearAlgebra.Ac_mul_B!  => LinearAlgebra.Ac_mul_B!,
+            LinearAlgebra.Ac_mul_Bc! => LinearAlgebra.Ac_mul_B!,
         )[eval(f)]
         @eval function $f(Y::$TY, M::$TM, X)
             b_out = $b_out

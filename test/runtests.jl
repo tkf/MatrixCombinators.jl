@@ -1,9 +1,12 @@
-using MatrixCombinators
 @static if VERSION < v"0.7.0-DEV.2005"
     using Base.Test
 else
     using Test
 end
+
+using MatrixCombinators
+using MatrixCombinators.LinearAlgebra:
+    A_mul_B!, A_mul_Bt!, At_mul_Bt!, A_mul_Bc!, Ac_mul_Bc!
 
 range_mat(n = 3, m = n) = reshape(collect(1:n * m), (n, m))
 
@@ -38,7 +41,7 @@ end
     ]
 
     @testset "$name" for name in ops
-        f = eval(name)
+        f = eval(MatrixCombinators, name)
         for A in a_arrays,
             B in b_arrays
 
@@ -51,16 +54,17 @@ end
             # TODO: non-square matrix
 
             for X in x_arrays
-                if f in (Base.A_mul_Bt!, Base.At_mul_Bt!)
+                if f in (A_mul_Bt!, At_mul_Bt!)
                     X′ = transpose(X)
-                elseif f in (Base.A_mul_Bc!, Base.Ac_mul_Bc!)
+                elseif f in (A_mul_Bc!, Ac_mul_Bc!)
                     X′ = X'
                 else
                     X′ = X
                 end
-                if X′ isa RowVector
+                if X isa AbstractVector && X !== X′
                     continue
                 end
+                X′ = X′ .+ 0  # materialize
 
                 b_out = B * X
                 M = combinator(A, B, b_out)
