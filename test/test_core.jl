@@ -58,8 +58,7 @@ end
                 end
                 X′ = X′ .+ 0  # materialize
 
-                b_out = B * X
-                M = combinator(A, B, b_out)
+                M = combinator(A, B)
 
                 TE = promote_type(eltype(A), eltype(B), eltype(X))
                 desired = Array{TE}((size(A, 1), size(X′, 2)))
@@ -106,8 +105,7 @@ end
 
             D = nonlazy(A, B)
             for X in x_arrays
-                b_out = B * X
-                M = combinator(A, B, b_out)
+                M = combinator(A, B)
 
                 actual = M * X
                 desired = D * X

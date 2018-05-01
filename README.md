@@ -56,6 +56,16 @@ A_mul_B!(y, M, x)
 @test y == D * x
 ```
 
+Matrix-matrix `A*_mul_B*!(Y, M, X)` multiplication is also supported:
+
+```julia
+X = [0 1 1
+     1 0 1]
+Y = similar(X)
+A_mul_B!(Y, M, X)
+@test Y == (A .+ B) * X
+```
+
 `MatrixCombinators.muled` works similarly for matrix multiplication:
 
 ```julia
@@ -67,27 +77,6 @@ A_mul_B!(y, M, x)
 
 That is to say, `M * x` computes `A * (B * x)`.
 
-
-### Internal temporary array (`b_out` cache)
-
-Lazy matrices created by `added` and `muled` can only be multiplied by
-a vector (at the moment; see [Limitations](#limitations)).  This is
-because those lazy matrices carry a cache array (`b_out`) for storing
-temporary result of `B * x` calculation.
-
-To use matrix-matrix multiplication lazy matrices created by `added`
-and `muled`, pass temporary arrays to them as the third argument:
-
-```julia
-b_out = typeof(B)((2, 3))
-M = MatrixCombinators.added(A, B, b_out)
-
-X = [0 1 1
-     1 0 1]
-Y = similar(X)
-A_mul_B!(Y, M, X)
-@test Y == (A .+ B) * X
-```
 
 ### Small-world network example
 
@@ -137,12 +126,7 @@ end
 (Those are not "theoretical" limitation and are solvable, well, with
 more code...)
 
-* `At_mul_B*!` and `Ac_mul_B*!` work only when first matrix passed to
-  `added` and `muled` is a square matrix.
-
-* `b_out` cache must be specified at creation time in order to use
-  `A*_mul_B*!` with matrix as the second argument.
-
+* Internal cache is used.
 * No support for `A_ldiv_B!` etc.
 
 

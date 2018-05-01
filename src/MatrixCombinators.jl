@@ -8,33 +8,65 @@ end
 const A_mul_B! = LinearAlgebra.A_mul_B!
 
 
-abstract type PairedMatrices{TA, TB, BO} end
+abstract type Allocator end
 
-struct AddedMatrices{TA, TB, BO} <: PairedMatrices{TA, TB, BO}
+# struct NonAllocator <: Allocator end
+
+struct GrowingCacheAllocator{T} <: Allocator
+    cache::T
+end
+
+GrowingCacheAllocator(V::Type{<: AbstractVector}, len) =
+    GrowingCacheAllocator(V(len))
+GrowingCacheAllocator(E::Type{<: Number}, len) =
+    GrowingCacheAllocator(Vector{E}, len)
+
+function allocate!(allocator::GrowingCacheAllocator, len::Int)
+    if length(allocator.cache) < len
+        resize!(allocator.cache, len)
+    end
+    return view(allocator.cache, 1:len)
+end
+
+function allocate!(allocator::Allocator, dims::Tuple)
+    v = allocate!(allocator, prod(dims))
+    return reshape(v, dims)
+end
+
+function allocator_for(A, B)
+    E = promote_type(eltype.((A, B))...)
+    len = size(B, 1)
+    return GrowingCacheAllocator(E, len)
+end
+
+
+abstract type PairedMatrices{TA, TB, ALC} end
+
+struct AddedMatrices{TA, TB, ALC} <: PairedMatrices{TA, TB, ALC}
     A::TA
     B::TB
-    b_out::BO
+    allocator::ALC
 
     function AddedMatrices(A::TA, B::TB,
-                           b_out::BO = zeros(eltype(B), size(B, 1)),
-                           ) where {TA, TB, BO}
+                           allocator::ALC = allocator_for(A, B),
+                           ) where {TA, TB, ALC}
         @assert size(A) == size(B)
-        return new{TA, TB, BO}(A, B, b_out)
+        return new{TA, TB, ALC}(A, B, allocator)
     end
 end
 
 const added = AddedMatrices
 
-struct MultipliedMatrices{TA, TB, BO} <: PairedMatrices{TA, TB, BO}
+struct MultipliedMatrices{TA, TB, ALC} <: PairedMatrices{TA, TB, ALC}
     A::TA
     B::TB
-    b_out::BO
+    allocator::ALC
 
     function MultipliedMatrices(A::TA, B::TB,
-                                b_out::BO = zeros(eltype(B), size(B, 1)),
-                                ) where {TA, TB, BO}
+                                allocator::ALC = allocator_for(A, B),
+                                ) where {TA, TB, ALC}
         @assert size(A, 2) == size(B, 1)
-        return new{TA, TB, BO}(A, B, b_out)
+        return new{TA, TB, ALC}(A, B, allocator)
     end
 end
 
@@ -43,17 +75,7 @@ const muled = MultipliedMatrices
 
 # --- Utilities
 
-const PMMatOut{TA, TB} = PairedMatrices{TA, TB, <: AbstractMatrix}
-const PMVecOut{TA, TB} = PairedMatrices{TA, TB, <: AbstractVector}
-
-const AddMatOut{TA, TB} = AddedMatrices{TA, TB, <: AbstractMatrix}
-# const AddVecOut{TA, TB} = AddedMatrices{TA, TB, <: AbstractVector}
-
-const MulMatOut{TA, TB} = MultipliedMatrices{TA, TB, <: AbstractMatrix}
-# const MulVecOut{TA, TB} = MultipliedMatrices{TA, TB, <: AbstractVector}
-
-b_out_vec(M::PMMatOut) = @view M.b_out[:, 1]
-b_out_vec(M::PMVecOut) = M.b_out
+allocate!(M::PairedMatrices, dims) = allocate!(M.allocator, dims)
 
 empty_array(::Type{T}, dims) where {T <: AbstractArray} = T(dims)
 empty_array(::Type{<: SparseMatrixCSC{T}}, dims,) where {T} =
@@ -64,8 +86,7 @@ empty_array(::Type{<: SparseMatrixCSC{T}}, dims,) where {T} =
 # https://docs.julialang.org/en/stable/manual/interfaces/#man-interface-array-1
 
 Base.eltype(M::PairedMatrices) = promote_type(eltype(M.A),
-                                              eltype(M.B),
-                                              eltype(M.b_out))
+                                              eltype(M.B))
 Base.length(M::PairedMatrices) = prod(size(M))
 
 Base.size(M::AddedMatrices, dim...) = size(M.A, dim...)
@@ -119,11 +140,23 @@ added_ops = :(
     LinearAlgebra.A_mul_Bt!, LinearAlgebra.At_mul_B!, LinearAlgebra.At_mul_Bt!,
     LinearAlgebra.A_mul_Bc!, LinearAlgebra.Ac_mul_B!, LinearAlgebra.Ac_mul_Bc!,
 ).args
-for (TY, TM, b_out) in
-        [(AbstractMatrix, AddMatOut, :(M.b_out)),
-         (AbstractVector, AddedMatrices, :(b_out_vec(M)))]
+for TY in [AbstractMatrix, AbstractVector]
     for f in added_ops
-        @eval function $f(Y::$TY, M::$TM, X)
+        if TY === AbstractVector
+            b_out = :(allocate!(M, size(M.B, 1)))
+        elseif eval(f) in (LinearAlgebra.At_mul_B!,
+                           LinearAlgebra.Ac_mul_B!)
+            b_out = :(allocate!(M, (size(M.B, 2), size(X, 2))))
+        elseif eval(f) in (LinearAlgebra.At_mul_Bt!,
+                           LinearAlgebra.Ac_mul_Bc!)
+            b_out = :(allocate!(M, (size(M.B, 2), size(X, 1))))
+        elseif eval(f) in (LinearAlgebra.A_mul_Bt!,
+                           LinearAlgebra.A_mul_Bc!)
+            b_out = :(allocate!(M, (size(M.B, 1), size(X, 1))))
+        else
+            b_out = :(allocate!(M, (size(M.B, 1), size(X, 2))))
+        end
+        @eval function $f(Y::$TY, M::AddedMatrices, X)
             b_out = $b_out
             $f(Y, M.A, X)
             $f(b_out, M.B, X)
@@ -132,6 +165,11 @@ for (TY, TM, b_out) in
         end
     end
 end
+# Note: using gemm! would be better since I can get rid of b_out here.
+# But it seems there is no consistent gemm! interface for various
+# structured/sparse matrix.  I need to define a wrapper first for this
+# optimization.
+
 
 # MultipliedMatrices
 muled_ops_nt = :(
@@ -143,11 +181,14 @@ muled_ops_tr = :(
     LinearAlgebra.At_mul_B!, LinearAlgebra.At_mul_Bt!,
     LinearAlgebra.Ac_mul_B!, LinearAlgebra.Ac_mul_Bc!,
 ).args
-for (TY, TM, b_out) in
-        [(AbstractMatrix, MulMatOut, :(M.b_out)),
-         (AbstractVector, MultipliedMatrices, :(b_out_vec(M)))]
+for TY in [AbstractMatrix, AbstractVector]
     for f in muled_ops_nt
-        @eval function $f(Y::$TY, M::$TM, X)
+        if TY === AbstractVector
+            b_out = :(allocate!(M, size(M.B, 1)))
+        else
+            b_out = :(allocate!(M, (size(M.B, 1), size(X, 2))))
+        end
+        @eval function $f(Y::$TY, M::MultipliedMatrices, X)
             b_out = $b_out
             $f(b_out, M.B, X)
             A_mul_B!(Y, M.A, b_out)
@@ -161,10 +202,19 @@ for (TY, TM, b_out) in
             LinearAlgebra.Ac_mul_B!  => LinearAlgebra.Ac_mul_B!,
             LinearAlgebra.Ac_mul_Bc! => LinearAlgebra.Ac_mul_B!,
         )[eval(f)]
-        @eval function $f(Y::$TY, M::$TM, X)
-            b_out = $b_out
-            $f(b_out, M.A, X)  # works only if A is square
-            $g(Y, M.B, b_out)
+        if TY === AbstractVector
+            a_out = :(allocate!(M, size(M.A, 2)))
+        elseif eval(f) in (LinearAlgebra.At_mul_B!,
+                           LinearAlgebra.Ac_mul_B!)
+            a_out = :(allocate!(M, (size(M.A, 2), size(X, 2))))
+        elseif eval(f) in (LinearAlgebra.At_mul_Bt!,
+                           LinearAlgebra.Ac_mul_Bc!)
+            a_out = :(allocate!(M, (size(M.A, 2), size(X, 1))))
+        end
+        @eval function $f(Y::$TY, M::MultipliedMatrices, X)
+            a_out = $a_out
+            $f(a_out, M.A, X)
+            $g(Y, M.B, a_out)
             return Y
         end
     end
