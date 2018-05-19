@@ -64,10 +64,6 @@ do_tr(M) = M
 
 allocate!(M::PairedMatrices, dims) = allocate!(M.allocator, dims)
 
-empty_array(::Type{T}, dims) where {T <: AbstractArray} = T(dims)
-empty_array(::Type{<: SparseMatrixCSC{T}}, dims) where {T} =
-    spzeros(T, dims...)
-
 
 # --- Array Interface
 # https://docs.julialang.org/en/stable/manual/interfaces/#man-interface-array-1

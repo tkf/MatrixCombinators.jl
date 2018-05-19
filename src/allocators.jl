@@ -7,7 +7,7 @@ struct GrowingCacheAllocator{T} <: Allocator
 end
 
 GrowingCacheAllocator(V::Type{<: AbstractVector}, len) =
-    GrowingCacheAllocator(V(len))
+    GrowingCacheAllocator(empty_array(V, len))
 GrowingCacheAllocator(E::Type{<: Number}, len) =
     GrowingCacheAllocator(Vector{E}, len)
 
