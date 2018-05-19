@@ -18,3 +18,13 @@ else
 end
 empty_array(::Type{<: SparseMatrixCSC{T}}, dims) where {T} =
     spzeros(T, dims...)
+
+
+peel(A::Union{Adjoint, Transpose}) = A.parent
+peel(A) = A
+
+
+tchar(::Type{<: AbstractMatrix}) = 'N'
+tchar(::Type{<: Adjoint}) = 'C'
+tchar(::Type{<: Transpose}) = 'T'
+tchar(::T) where T = tchar(T)

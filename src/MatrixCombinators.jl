@@ -1,6 +1,7 @@
 module MatrixCombinators
 
 include("utils.jl")
+include("gem_wrappers.jl")
 include("allocators.jl")
 include("executors.jl")
 include("types.jl")
