@@ -35,6 +35,9 @@ const muled = MultipliedMatrices
 
 # --- Utilities
 
+adjoint(M::PairedMatrices) = do_tr(Adjoint(M))
+transpose(M::PairedMatrices) = do_tr(Transpose(M))
+
 """
 Convert Adjoint/Transpose of a pair to a pair of Adjoint/Transpose
 recursively.

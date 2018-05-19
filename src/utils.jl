@@ -1,9 +1,12 @@
 @static if VERSION < v"0.7.0-"
     const LinearAlgebra = Base.LinAlg
     include("compat06.jl")
+    import Base: ctranspose, transpose
+    const adjoint = ctranspose
 else
     using LinearAlgebra
     using SparseArrays
+    import Base: adjoint, transpose
 end
 const A_mul_B! = LinearAlgebra.A_mul_B!
 
