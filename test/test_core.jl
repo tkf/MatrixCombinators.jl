@@ -1,5 +1,25 @@
 include("preamble.jl")
 
+added_ops = :(
+    LinearAlgebra.A_mul_B!,
+    LinearAlgebra.A_mul_Bt!, LinearAlgebra.At_mul_B!, LinearAlgebra.At_mul_Bt!,
+    LinearAlgebra.A_mul_Bc!, LinearAlgebra.Ac_mul_B!, LinearAlgebra.Ac_mul_Bc!,
+).args
+
+muled_ops_nt = :(
+    LinearAlgebra.A_mul_B!,
+    LinearAlgebra.A_mul_Bt!,
+    LinearAlgebra.A_mul_Bc!,
+).args
+
+muled_ops_tr = :(
+    LinearAlgebra.At_mul_B!, LinearAlgebra.At_mul_Bt!,
+    LinearAlgebra.Ac_mul_B!, LinearAlgebra.Ac_mul_Bc!,
+).args
+
+muled_ops = (muled_ops_nt..., muled_ops_tr...)
+
+
 range_mat(n = 3, m = n) = reshape(collect(1:n * m), (n, m))
 
 ab_arrays = let
@@ -22,12 +42,12 @@ end
     [
         (MatrixCombinators.added,
          +,
-         MatrixCombinators.added_ops,
+         added_ops,
          ab_arrays,
          ab_arrays),
         (MatrixCombinators.muled,
          *,
-         MatrixCombinators.muled_ops,
+         muled_ops,
          ab_arrays,
          ab_arrays),
     ]

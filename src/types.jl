@@ -1,6 +1,6 @@
-abstract type PairedMatrices{TA, TB, ALC} end
+abstract type PairedMatrices{TE, TA, TB, ALC} <: AbstractMatrix{TE} end
 
-struct AddedMatrices{TA, TB, ALC} <: PairedMatrices{TA, TB, ALC}
+struct AddedMatrices{TE, TA, TB, ALC} <: PairedMatrices{TE, TA, TB, ALC}
     A::TA
     B::TB
     allocator::ALC
@@ -9,13 +9,14 @@ struct AddedMatrices{TA, TB, ALC} <: PairedMatrices{TA, TB, ALC}
                            allocator::ALC = allocator_for(A, B),
                            ) where {TA, TB, ALC}
         @assert size(A) == size(B)
-        return new{TA, TB, ALC}(A, B, allocator)
+        TE = promote_type(eltype(A), eltype(B))
+        return new{TE, TA, TB, ALC}(A, B, allocator)
     end
 end
 
 const added = AddedMatrices
 
-struct MultipliedMatrices{TA, TB, ALC} <: PairedMatrices{TA, TB, ALC}
+struct MultipliedMatrices{TE, TA, TB, ALC} <: PairedMatrices{TE, TA, TB, ALC}
     A::TA
     B::TB
     allocator::ALC
@@ -24,7 +25,8 @@ struct MultipliedMatrices{TA, TB, ALC} <: PairedMatrices{TA, TB, ALC}
                                 allocator::ALC = allocator_for(A, B),
                                 ) where {TA, TB, ALC}
         @assert size(A, 2) == size(B, 1)
-        return new{TA, TB, ALC}(A, B, allocator)
+        TE = promote_type(eltype(A), eltype(B))
+        return new{TE, TA, TB, ALC}(A, B, allocator)
     end
 end
 
@@ -33,10 +35,37 @@ const muled = MultipliedMatrices
 
 # --- Utilities
 
+"""
+Convert Adjoint/Transpose of a pair to a pair of Adjoint/Transpose
+recursively.
+"""
+do_tr(M::Adjoint{<: Any, <: AddedMatrices}) =
+    AddedMatrices(do_tr(Adjoint(M.parent.A)),
+                  do_tr(Adjoint(M.parent.B)),
+                  M.parent.allocator)
+
+do_tr(M::Transpose{<: Any, <: AddedMatrices}) =
+    AddedMatrices(do_tr(Transpose(M.parent.A)),
+                  do_tr(Transpose(M.parent.B)),
+                  M.parent.allocator)
+
+do_tr(M::Adjoint{<: Any, <: MultipliedMatrices}) =
+    MultipliedMatrices(do_tr(Adjoint(M.parent.B)),
+                       do_tr(Adjoint(M.parent.A)),
+                       M.parent.allocator)
+
+do_tr(M::Transpose{<: Any, <: MultipliedMatrices}) =
+    MultipliedMatrices(do_tr(Transpose(M.parent.B)),
+                       do_tr(Transpose(M.parent.A)),
+                       M.parent.allocator)
+
+do_tr(M) = M
+
+
 allocate!(M::PairedMatrices, dims) = allocate!(M.allocator, dims)
 
 empty_array(::Type{T}, dims) where {T <: AbstractArray} = T(dims)
-empty_array(::Type{<: SparseMatrixCSC{T}}, dims,) where {T} =
+empty_array(::Type{<: SparseMatrixCSC{T}}, dims) where {T} =
     spzeros(T, dims...)
 
 
@@ -56,10 +85,10 @@ Base.getindex(M::AddedMatrices, I::Vararg{Int, N}) where N =
 preferred_style(t::T, ::T) where {T <: IndexStyle} = t
 preferred_style(::IndexStyle, ::IndexStyle) = IndexCartesian()
 
-Base.IndexStyle(::Type{<:AddedMatrices{TA, TB}}) where {TA, TB} =
+Base.IndexStyle(::Type{<:AddedMatrices{<: Any, TA, TB}}) where {TA, TB} =
     preferred_style(IndexStyle(TA), IndexStyle(TB))
 
-function Base.convert(T::Type{<: AbstractArray}, M::AddedMatrices)
+function materialize(T::Type{<: AbstractMatrix}, M::AddedMatrices)
     Y = empty_array(T, size(M))
     @. Y = M.A + M.B
     return Y
@@ -83,8 +112,18 @@ end
 
 Base.IndexStyle(::Type{<:MultipliedMatrices}) = IndexCartesian()
 
-function Base.convert(T::Type{<: AbstractArray}, M::MultipliedMatrices)
+function materialize(T::Type{<: AbstractMatrix}, M::MultipliedMatrices)
     Y = empty_array(T, size(M))
     A_mul_B!(Y, M.A, M.B)
     return Y
 end
+
+Base.convert(T::Type{Matrix},
+             M::PairedMatrices) = materialize(T, M)
+Base.convert(T::Type{AbstractMatrix},
+             M::PairedMatrices) = materialize(T, M)
+
+Base.convert(::Type{T}, M::T) where {T <: PairedMatrices} = M
+# This is required to avoid Base.convert definitions above, since
+# PairedMatrices itself is an AbstractMatrix.  I found a similar
+# definition in base/sysimg.jl so it's not crazy to define this???
