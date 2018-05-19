@@ -7,6 +7,7 @@ function _mul! end
 
 const AdjOrTrOfPair = Union{<: Adjoint{<: Any, <: PairedMatrices},
                             <: Transpose{<: Any, <: PairedMatrices}}
+const AdjTrOrPair = Union{PairedMatrices, AdjOrTrOfPair}
 
 # First convert Adjoint/Transpose to a pair and then "execute" it:
 _mul!(Y, M::AdjOrTrOfPair, X) = _mul!(Y, do_tr(M), X)

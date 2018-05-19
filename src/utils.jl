@@ -3,5 +3,6 @@
     include("compat06.jl")
 else
     using LinearAlgebra
+    using SparseArrays
 end
 const A_mul_B! = LinearAlgebra.A_mul_B!

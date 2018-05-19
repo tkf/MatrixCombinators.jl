@@ -107,7 +107,9 @@ end
 function Base.getindex(M::MultipliedMatrices, i::Int, j::Int)
     x = spzeros(Int, size(M, 2))
     x[j] = 1
-    return (M * x)[i]
+    y = empty_array(Array{eltype(M)}, size(M, 1))
+    _mul!(y, M, x)
+    return y[i]
 end
 
 Base.IndexStyle(::Type{<:MultipliedMatrices}) = IndexCartesian()
