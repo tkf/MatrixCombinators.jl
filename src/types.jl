@@ -116,12 +116,7 @@ function materialize(T::Type{<: AbstractMatrix}, M::MultipliedMatrices)
     return Y
 end
 
-Base.convert(T::Type{Matrix},
-             M::PairedMatrices) = materialize(T, M)
-Base.convert(T::Type{AbstractMatrix},
-             M::PairedMatrices) = materialize(T, M)
-
-Base.convert(::Type{T}, M::T) where {T <: PairedMatrices} = M
-# This is required to avoid Base.convert definitions above, since
-# PairedMatrices itself is an AbstractMatrix.  I found a similar
-# definition in base/sysimg.jl so it's not crazy to define this???
+Base.convert(T::Type{Matrix}, M::PairedMatrices) = materialize(T, M)
+Base.convert(T::Type{Array}, M::PairedMatrices) = convert(Matrix, M)
+# Those above are similar to how convert(..., ::SparseMatrixCSC) is
+# defined in julia/stdlib/SparseArrays/src/sparsematrix.jl.
