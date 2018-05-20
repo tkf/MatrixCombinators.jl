@@ -74,3 +74,22 @@ function _amul!(Y::AbstractVector{TY},
     tA = tchar(A)
     _gemv!(tA, one(et), peel(A), B, one(et), Y)
 end
+
+
+function has_gemm(TA::Type{<: AbstractVecOrMat},
+                  TB::Type{<: AbstractVecOrMat},
+                  TC::Type{<: AbstractVecOrMat})
+    et = promote_type(eltype(TA), eltype(TB), eltype(TC))
+    return length(methods(BLAS.gemm!, (Char, Char, et, TA, TB, et, TC))) > 0
+end
+
+
+function has_gemv(TA::Type{<: AbstractVecOrMat},
+                  TB::Type{<: AbstractVector},
+                  TC::Type{<: AbstractVector})
+    et = promote_type(eltype(TA), eltype(TB), eltype(TC))
+    return length(methods(BLAS.gemv!, (Char, et, TA, TB, et, TC))) > 0
+end
+
+has_amul(TA, TB, TC::Type{<: AbstractMatrix}) = has_gemm(TA, TB, TC)
+has_amul(TA, TB, TC::Type{<: AbstractVector}) = has_gemv(TA, TB, TC)
