@@ -82,7 +82,7 @@ That is to say, `M * x` computes `A * (B * x)`.
 
 <!--
 ```julia
-@static if Pkg.installed("BandedMatrices") != nothing
+@static if "BandedMatrices" in keys(Pkg.installed())
 ```
 -->
 
