@@ -1,7 +1,12 @@
 """
+    _mul!(Y, M, X)
+
 Internal interface for `mul!(Y, M, X)` for the case `M` is a
 `PairedMatrices` and alike.  It is for *definition* and must not be
 called (in most of the cases).
+
+`_mul!` is called via `mul!` in Julia >= 0.7 (see interface10.jl) and
+via `A_mul_B!`, `Ac_mul_Bc!`, etc., in Julia 0.6 (see interface06.jl).
 """
 function _mul! end
 
