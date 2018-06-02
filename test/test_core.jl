@@ -202,8 +202,8 @@ end
               ab_arrays),
          ],
          dest in [
-             # Array,
-             # Array{Float64},
+             Array,
+             Array{Float64},
              Matrix,
              Matrix{Float64},
              SparseMatrixCSC,
