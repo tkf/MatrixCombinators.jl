@@ -87,12 +87,6 @@ preferred_style(::IndexStyle, ::IndexStyle) = IndexCartesian()
 Base.IndexStyle(::Type{<:AddedMatrices{<: Any, TA, TB}}) where {TA, TB} =
     preferred_style(IndexStyle(TA), IndexStyle(TB))
 
-function materialize(T::Type{<: AbstractMatrix}, M::AddedMatrices)
-    Y = empty_array(T, size(M))
-    @. Y = M.A + M.B
-    return Y
-end
-
 Base.size(M::MultipliedMatrices) = (size(M.A, 1), size(M.B, 2))
 
 function Base.size(M::MultipliedMatrices, i::Integer)
@@ -113,11 +107,48 @@ end
 
 Base.IndexStyle(::Type{<:MultipliedMatrices}) = IndexCartesian()
 
-function materialize(T::Type{<: AbstractMatrix}, M::MultipliedMatrices)
+
+"""
+    materialize(T::Type, M::PairedMatrices)
+
+Note: prefer `convert` rather than calling this function directly.
+
+Do the computation of `M` and convert the result into a regular array
+of type `T`.
+
+If array type `T` specify the element type, it is used.  If not, the
+element type of `M` is used.
+"""
+materialize(T::Type{<: AbstractMatrix{<: Number}}, M::PairedMatrices) =
+    _materialize(T, M)
+
+# This is required for disambiguation:
+materialize(T::Type{<: AbstractMatrix{<: Number}},
+            M::PairedMatrices{<: Number}) =
+    _materialize(T, M)
+
+# If Matrix type `TA` does not have "concrete" element type, use the
+# element type of `M`:
+materialize(TA::Type{<: AbstractMatrix},
+            M::PairedMatrices{TE},
+            ) where {TE <: Number} =
+    materialize(TA{TE}, M)
+
+# Actual implementation of `materialize`.  This is done in a separate
+# function so that I don't need to repeat the function body for the
+# disambiguation juggling above.
+function _materialize(T, M::AddedMatrices)
+    Y = empty_array(T, size(M))
+    @. Y = M.A + M.B
+    return Y
+end
+
+function _materialize(T, M::MultipliedMatrices)
     Y = empty_array(T, size(M))
     A_mul_B!(Y, M.A, M.B)
     return Y
 end
+
 
 Base.convert(T::Type{Matrix}, M::PairedMatrices) = materialize(T, M)
 Base.convert(T::Type{Array}, M::PairedMatrices) = convert(Matrix, M)
