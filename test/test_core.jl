@@ -184,3 +184,38 @@ end
         end
     end
 end
+
+
+@testset "materialize($dest, ::$combinator)" for
+        (combinator,
+         nonlazy,
+         a_arrays,
+         b_arrays,
+         ) in [
+             (MatrixCombinators.AddedMatrices,
+              +,
+              ab_arrays,
+              ab_arrays),
+             (MatrixCombinators.MultipliedMatrices,
+              *,
+              ab_arrays,
+              ab_arrays),
+         ],
+         dest in [
+             # Array,
+             # Array{Float64},
+             Matrix,
+             Matrix{Float64},
+             SparseMatrixCSC,
+             SparseMatrixCSC{Float64},
+         ]
+
+    for A in a_arrays,
+        B in b_arrays
+
+        M = combinator(A, B)
+        D = nonlazy(A, B)
+        C = MatrixCombinators.materialize(dest, M)
+        @test C ≈ D
+    end
+end
