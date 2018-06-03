@@ -98,24 +98,41 @@ function _gemv!(tA,
     _gemm!(tA, 'N', alpha, A, X, beta, Y)
 end
 
+"""
+    gmul!(C, A, B, [α = 1, [β = 1]])
 
-function _amul!(Y::AbstractMatrix{TY},
-                A::AbstractMatrix{TA},
-                B::AbstractMatrix{TB},
-                ) where {TY, TA, TB}
-    et = promote_type(TY, TA, TB)
+GEMM/GEMV-like multiplication ("generalized" multiplication) interface.
+It calculates:
+
+    C = α * A * B + β * C
+
+**[WARNING]**
+Default `β` is 1!  Thus, its 3-ary behavior is "add `A * B` to `C`":
+
+    C += A * B
+
+Its signature is based on `SparseMatrixCSC`'s `mul!`:
+- [stdlib/SparseArrays/src/linalg.jl (v0.7.0-alpha)](https://github.com/JuliaLang/julia/blob/v0.7.0-alpha/stdlib/SparseArrays/src/linalg.jl#L32)
+"""
+function gmul!(Y::AbstractMatrix{TY},
+               A::AbstractMatrix{TA},
+               B::AbstractMatrix{TB},
+               alpha = one(promote_type(TY, TA, TB)),
+               beta = one(promote_type(TY, TA, TB)),
+               ) where {TY, TA, TB}
     tA = tchar(A)
     tB = tchar(B)
-    _gemm!(tA, tB, one(et), peel(A), peel(B), one(et), Y)
+    _gemm!(tA, tB, alpha, peel(A), peel(B), beta, Y)
 end
 
-function _amul!(Y::AbstractVector{TY},
-                A::AbstractMatrix{TA},
-                B::AbstractVector{TB},
-                ) where {TY, TA, TB}
-    et = promote_type(TY, TA, TB)
+function gmul!(Y::AbstractVector{TY},
+               A::AbstractMatrix{TA},
+               B::AbstractVector{TB},
+               alpha = one(promote_type(TY, TA, TB)),
+               beta = one(promote_type(TY, TA, TB)),
+               ) where {TY, TA, TB}
     tA = tchar(A)
-    _gemv!(tA, one(et), peel(A), B, one(et), Y)
+    _gemv!(tA, alpha, peel(A), B, beta, Y)
 end
 
 
@@ -134,5 +151,5 @@ function has_gemv(TA::Type{<: AbstractVecOrMat},
     return length(methods(BLAS.gemv!, (Char, et, TA, TB, et, TC))) > 0
 end
 
-has_amul(TA, TB, TC::Type{<: AbstractMatrix}) = has_gemm(TA, TB, TC)
-has_amul(TA, TB, TC::Type{<: AbstractVector}) = has_gemv(TA, TB, TC)
+has_gmul(TA, TB, TC::Type{<: AbstractMatrix}) = has_gemm(TA, TB, TC)
+has_gmul(TA, TB, TC::Type{<: AbstractVector}) = has_gemv(TA, TB, TC)
