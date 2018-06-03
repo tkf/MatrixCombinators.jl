@@ -22,14 +22,20 @@ muled_ops = (muled_ops_nt..., muled_ops_tr...)
 
 range_mat(n = 3, m = n) = reshape(collect(1:n * m), (n, m))
 
-ab_arrays = let
-    A1 = range_mat()
-
+array_variants(A1) =
     [
         A1,
         sparse(A1),
         (@view A1[1:end, 1:end]),
     ]
+
+ab_arrays = let
+    A1 = range_mat()
+
+    vcat(
+        array_variants(A1),          # Int arrays
+        array_variants(A1 .* 1.0),   # Float64 arrays
+    )
 end
 
 
