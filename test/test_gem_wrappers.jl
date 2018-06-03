@@ -1,6 +1,6 @@
 include("preamble.jl")
 
-using MatrixCombinators: _gemv!, _gemm!, _amul!,
+using MatrixCombinators: _gemv!, _gemm!, _amul!, has_gemv, has_gemm,
     adjoint, transpose, Adjoint, Transpose
 
 conc = Dict('N' => identity, 'C' => adjoint, 'T' => transpose)
@@ -19,6 +19,7 @@ lazy = Dict('N' => identity, 'C' => Adjoint, 'T' => Transpose)
             A_ = Matrix(t(A))
             gemv_desired = α .* (t(A_) * x) .+ β .* y
             gemv_actual = copy(y)
+            @test has_gemv(typeof.((A_, x, gemv_actual))...)
             _gemv!(c, α, A_, x, β, gemv_actual)
             @test gemv_actual ≈ gemv_desired
 
@@ -51,6 +52,7 @@ end
             gemm_desired = α .* (tA(A_) * tB(B_)) .+ β .* C
             gemm_actual = copy(C)
             _gemm!(cA, cB, α, A_, B_, β, gemm_actual)
+            @test has_gemm(typeof.((A_, B_, gemm_actual))...)
             @test gemm_actual ≈ gemm_desired
 
             amul_actual = tA(A_) * tB(B_) .+ C
