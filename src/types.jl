@@ -119,19 +119,15 @@ of type `T`.
 If array type `T` specify the element type, it is used.  If not, the
 element type of `M` is used.
 """
-materialize(T::Type{<: AbstractArray{<: Number}}, M::PairedMatrices) =
-    _materialize(T, M)
-
-# This is required for disambiguation:
 materialize(T::Type{<: AbstractArray{<: Number}},
-            M::PairedMatrices{<: Number}) =
+            M::PairedMatrices) =
     _materialize(T, M)
 
 # If Matrix type `TA` does not have "concrete" element type, use the
 # element type of `M`:
 materialize(TA::Type{<: AbstractArray},
             M::PairedMatrices{TE},
-            ) where {TE <: Number} =
+            ) where {TE} =
     materialize(TA{TE}, M)
 
 # Actual implementation of `materialize`.  This is done in a separate
