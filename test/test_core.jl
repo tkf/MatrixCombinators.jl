@@ -29,7 +29,7 @@ array_variants(A1) =
         (@view A1[1:end, 1:end]),
     ]
 
-ab_arrays = let
+a_arrays = let
     A1 = range_mat()
 
     vcat(
@@ -38,30 +38,27 @@ ab_arrays = let
     )
 end
 
+ab_arrays_default = [(A, B) for A in a_arrays, B in a_arrays][:]
+
 
 @testset "$combinator" for (combinator,
                             nonlazy,
                             ops,
-                            a_arrays,
-                            b_arrays,
                             ) in
     [
         (MatrixCombinators.added,
          +,
          added_ops,
-         ab_arrays,
-         ab_arrays),
+         ),
         (MatrixCombinators.muled,
          *,
          muled_ops,
-         ab_arrays,
-         ab_arrays),
+         ),
     ]
 
     @testset "$name" for name in ops
         f = eval(MatrixCombinators, name)
-        for A in a_arrays,
-            B in b_arrays
+        for (A, B) in ab_arrays_default
 
             x_arrays = [
                 collect(1:size(B, 2)),
@@ -118,8 +115,7 @@ end
     end
 
     @testset "*" begin
-        for A in a_arrays,
-            B in b_arrays
+        for (A, B) in ab_arrays_default
 
             x_arrays = [
                 collect(1:size(B, 2)),
@@ -141,8 +137,7 @@ end
     end
 
     @testset "interface" begin
-        for A in a_arrays,
-            B in b_arrays
+        for (A, B) in ab_arrays_default
 
             M = combinator(A, B)
             D = nonlazy(A, B)
@@ -195,17 +190,13 @@ end
 @testset "materialize($dest, ::$combinator)" for
         (combinator,
          nonlazy,
-         a_arrays,
-         b_arrays,
          ) in [
              (MatrixCombinators.AddedMatrices,
               +,
-              ab_arrays,
-              ab_arrays),
+              ),
              (MatrixCombinators.MultipliedMatrices,
               *,
-              ab_arrays,
-              ab_arrays),
+              ),
          ],
          dest in [
              Array,
@@ -216,8 +207,7 @@ end
              SparseMatrixCSC{Float64},
          ]
 
-    for A in a_arrays,
-        B in b_arrays
+    for (A, B) in ab_arrays_default
 
         M = combinator(A, B)
         D = nonlazy(A, B)
