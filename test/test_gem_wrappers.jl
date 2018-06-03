@@ -1,7 +1,7 @@
 include("preamble.jl")
 
-using MatrixCombinators: _gemv!, _gemm!, gmul!, has_gemv, has_gemm,
-    adjoint, transpose, Adjoint, Transpose
+using MatrixCombinators: _gemv!, _gemm!, gmul!, has_gemv, has_gemm, has_gmul,
+    adjoint, transpose, Adjoint, Transpose, empty_array
 
 conc = Dict('N' => identity, 'C' => adjoint, 'T' => transpose)
 lazy = Dict('N' => identity, 'C' => Adjoint, 'T' => Transpose)
@@ -59,6 +59,69 @@ end
             gmul_desired = copy(C)
             gmul!(gmul_desired, lazy[cA](A_), lazy[cB](B_))
             @test gmul_actual ≈ gmul_desired
+        end
+    end
+end
+
+
+some_array(T::Type{<: AbstractMatrix}) = empty_array(T, (2, 2))
+some_array(T::Type{<: AbstractVector}) = empty_array(T, (2,))
+
+
+@testset "has_gmul" begin
+    abc_types_with_blas_gemm = [
+        (:Matrix, :Matrix, :Matrix),
+        (:Vector, :Matrix, :Vector),
+    ]
+    # TODO: Add BlockBandedMatrices.BlockBandedBlock
+
+    abc_types_with_nonblas_gemm = [
+        (:Matrix, :SparseMatrixCSC, :Matrix),
+        (:Vector, :SparseMatrixCSC, :Vector),
+    ]
+
+    abc_types_with_gmul = vcat(
+        abc_types_with_blas_gemm,
+        abc_types_with_nonblas_gemm,
+    )
+
+    @testset "no element type, TA=$TA, TB=$TB, TC=$TC" for
+            (TA, TB, TC) in abc_types_with_blas_gemm
+        # Should I use `abc_types_with_gmul`?
+
+        TA = eval(TA)
+        TB = eval(TB)
+        TC = eval(TC)
+
+        @test ! has_gmul(TA, TB, TC)
+    end
+
+    for (element_types, abc_types, yes) in [
+            ((Float64, Float32, Complex128, Complex64),
+             abc_types_with_gmul,
+             true),
+            ((Int, BigFloat, BigInt),
+             abc_types_with_blas_gemm,
+             false),
+            ((Int, BigFloat, BigInt),
+             abc_types_with_nonblas_gemm,
+             true),
+        ]
+
+        @testset "elty=$elty, TA=$TA, TB=$TB, TC=$TC" for
+                elty in element_types,
+                (TA, TB, TC) in abc_types
+
+            TA = eval(TA)
+            TB = eval(TB)
+            TC = eval(TC)
+
+            @test has_gmul(TA{elty}, TB{elty}, TC{elty}) == yes
+
+            A = some_array(TA{elty})
+            B = some_array(TB{elty})
+            C = some_array(TC{elty})
+            @test has_gmul(A, B, C) == yes
         end
     end
 end
