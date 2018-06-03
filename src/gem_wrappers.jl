@@ -145,11 +145,12 @@ end
 
 
 function has_gemv(TA::Type{<: AbstractVecOrMat},
-                  TB::Type{<: AbstractVector},
+                  TB::Type{<: AbstractVecOrMat},
                   TC::Type{<: AbstractVector})
     et = promote_type(eltype(TA), eltype(TB), eltype(TC))
     return length(methods(BLAS.gemv!, (Char, et, TA, TB, et, TC))) > 0
 end
 
-has_gmul(TA, TB, TC::Type{<: AbstractMatrix}) = has_gemm(TA, TB, TC)
-has_gmul(TA, TB, TC::Type{<: AbstractVector}) = has_gemv(TA, TB, TC)
+has_gmul(TA::Type, TB::Type, TC::Type{<: AbstractMatrix}) = has_gemm(TA, TB, TC)
+has_gmul(TA::Type, TB::Type, TC::Type{<: AbstractVector}) = has_gemv(TA, TB, TC)
+has_gmul(A, B, C) = has_gmul(typeof.(peel.((A, B, C)))...)

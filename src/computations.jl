@@ -27,17 +27,16 @@ _allocate_mul!(executor, M, X::AbstractMatrix) =
     allocate!(executor, (size(M.B, 1), size(X, 2)))
 
 
-function _mul!(executor::DefaultExecutor, Y, M::AddedMatrices, X)
+function _mul!(executor::DumbExecutor, Y, M::AddedMatrices, X)
     b_out = _allocate_mul!(executor, M, X)
     mul!(Y, M.A, X)
     mul!(b_out, M.B, X)
     Y .+= b_out
     return Y
 end
-# Note: using gemm! would be better since I can get rid of b_out here.
-# But it seems there is no consistent gemm! interface for various
-# structured/sparse matrix.  I need to define a wrapper first for this
-# optimization.
+# Note: This is a default fallback implementation.  If one of the
+# matrix A or B defines gemm!-like function, the definition in
+# [[./optimizations/gmul.jl]] is used.
 
 
 function _mul!(executor::AllocatingExecutor, Y, M::MultipliedMatrices, X)
