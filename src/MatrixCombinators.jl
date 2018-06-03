@@ -2,6 +2,7 @@ module MatrixCombinators
 
 include("utils.jl")
 include("allocators.jl")
+include("executors.jl")
 include("types.jl")
 include("computations.jl")
 

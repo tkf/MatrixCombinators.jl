@@ -1,32 +1,32 @@
-abstract type PairedMatrices{TE, TA, TB, ALC} <: AbstractMatrix{TE} end
+abstract type PairedMatrices{TE, TA, TB, EXR} <: AbstractMatrix{TE} end
 
-struct AddedMatrices{TE, TA, TB, ALC} <: PairedMatrices{TE, TA, TB, ALC}
+struct AddedMatrices{TE, TA, TB, EXR} <: PairedMatrices{TE, TA, TB, EXR}
     A::TA
     B::TB
-    allocator::ALC
+    executor::EXR
 
     function AddedMatrices(A::TA, B::TB,
-                           allocator::ALC = allocator_for(A, B),
-                           ) where {TA, TB, ALC}
+                           executor::EXR = executor_for(A, B),
+                           ) where {TA, TB, EXR}
         @assert size(A) == size(B)
         TE = promote_type(eltype(A), eltype(B))
-        return new{TE, TA, TB, ALC}(A, B, allocator)
+        return new{TE, TA, TB, EXR}(A, B, executor)
     end
 end
 
 const added = AddedMatrices
 
-struct MultipliedMatrices{TE, TA, TB, ALC} <: PairedMatrices{TE, TA, TB, ALC}
+struct MultipliedMatrices{TE, TA, TB, EXR} <: PairedMatrices{TE, TA, TB, EXR}
     A::TA
     B::TB
-    allocator::ALC
+    executor::EXR
 
     function MultipliedMatrices(A::TA, B::TB,
-                                allocator::ALC = allocator_for(A, B),
-                                ) where {TA, TB, ALC}
+                                executor::EXR = executor_for(A, B),
+                                ) where {TA, TB, EXR}
         @assert size(A, 2) == size(B, 1)
         TE = promote_type(eltype(A), eltype(B))
-        return new{TE, TA, TB, ALC}(A, B, allocator)
+        return new{TE, TA, TB, EXR}(A, B, executor)
     end
 end
 
@@ -45,27 +45,27 @@ recursively.
 do_tr(M::Adjoint{<: Any, <: AddedMatrices}) =
     AddedMatrices(do_tr(Adjoint(M.parent.A)),
                   do_tr(Adjoint(M.parent.B)),
-                  M.parent.allocator)
+                  M.parent.executor)
 
 do_tr(M::Transpose{<: Any, <: AddedMatrices}) =
     AddedMatrices(do_tr(Transpose(M.parent.A)),
                   do_tr(Transpose(M.parent.B)),
-                  M.parent.allocator)
+                  M.parent.executor)
 
 do_tr(M::Adjoint{<: Any, <: MultipliedMatrices}) =
     MultipliedMatrices(do_tr(Adjoint(M.parent.B)),
                        do_tr(Adjoint(M.parent.A)),
-                       M.parent.allocator)
+                       M.parent.executor)
 
 do_tr(M::Transpose{<: Any, <: MultipliedMatrices}) =
     MultipliedMatrices(do_tr(Transpose(M.parent.B)),
                        do_tr(Transpose(M.parent.A)),
-                       M.parent.allocator)
+                       M.parent.executor)
 
 do_tr(M) = M
 
 
-allocate!(M::PairedMatrices, dims) = allocate!(M.allocator, dims)
+allocate!(M::PairedMatrices, dims) = allocate!(M.executor, dims)
 
 
 # --- Array Interface
