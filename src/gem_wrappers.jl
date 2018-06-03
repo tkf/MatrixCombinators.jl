@@ -99,17 +99,12 @@ function _gemv!(tA,
 end
 
 """
-    gmul!(C, A, B, [α = 1, [β = 1]])
+    gmul!(C, A, B, α, β)
 
 GEMM/GEMV-like multiplication ("generalized" multiplication) interface.
 It calculates:
 
     C = α * A * B + β * C
-
-**[WARNING]**
-Default `β` is 1!  Thus, its 3-ary behavior is "add `A * B` to `C`":
-
-    C += A * B
 
 Its signature is based on `SparseMatrixCSC`'s `mul!`:
 - [stdlib/SparseArrays/src/linalg.jl (v0.7.0-alpha)](https://github.com/JuliaLang/julia/blob/v0.7.0-alpha/stdlib/SparseArrays/src/linalg.jl#L32)
@@ -133,6 +128,21 @@ function gmul!(Y::AbstractVector{TY},
                ) where {TY, TA, TB}
     tA = tchar(A)
     _gemv!(tA, alpha, peel(A), B, beta, Y)
+end
+
+
+"""
+    amul!(Y, A, B)
+
+A short-hand notation for "`gmul!(Y, A, B, 1, 1)`", i.e., it does:
+
+    Y += A * B
+"""
+function amul!(Y::AbstractArray{TY},
+               A::AbstractMatrix{TA},
+               B::AbstractArray{TB}) where {TY, TA, TB}
+    alpha = beta = one(promote_type(TY, TA, TB))
+    return gmul!(Y, A, B, alpha, beta)
 end
 
 
