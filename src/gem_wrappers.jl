@@ -136,21 +136,43 @@ function gmul!(Y::AbstractVector{TY},
 end
 
 
-function has_gemm(TA::Type{<: AbstractVecOrMat},
-                  TB::Type{<: AbstractVecOrMat},
-                  TC::Type{<: AbstractVecOrMat})
+has_gemm(::Type, ::Type, ::Type) = false
+has_gemv(::Type, ::Type, ::Type) = false
+
+
+function has_gemm(TA::Type{<: Union{AbstractVecOrMat{T},
+                                    Adjoint{T, <: AbstractVecOrMat{T}},
+                                    Transpose{T, <: AbstractVecOrMat{T}}}},
+                  TB::Type{<: Union{AbstractVecOrMat{T},
+                                    Adjoint{T, <: AbstractVecOrMat{T}},
+                                    Transpose{T, <: AbstractVecOrMat{T}}}},
+                  TC::Type{<: AbstractVecOrMat{T}},
+                  ) where {T <: BLAS.BlasFloat}
     et = promote_type(eltype(TA), eltype(TB), eltype(TC))
     return length(methods(BLAS.gemm!, (Char, Char, et, TA, TB, et, TC))) > 0
 end
 
 
-function has_gemv(TA::Type{<: AbstractVecOrMat},
-                  TB::Type{<: AbstractVecOrMat},
-                  TC::Type{<: AbstractVector})
+function has_gemv(TA::Type{<: Union{AbstractVecOrMat{T},
+                                    Adjoint{T, <: AbstractVecOrMat{T}},
+                                    Transpose{T, <: AbstractVecOrMat{T}}}},
+                  TB::Type{<: AbstractVecOrMat{T}},
+                  TC::Type{<: AbstractVector{T}},
+                  ) where {T <: BLAS.BlasFloat}
     et = promote_type(eltype(TA), eltype(TB), eltype(TC))
     return length(methods(BLAS.gemv!, (Char, et, TA, TB, et, TC))) > 0
 end
 
-has_gmul(TA::Type, TB::Type, TC::Type{<: AbstractMatrix}) = has_gemm(TA, TB, TC)
-has_gmul(TA::Type, TB::Type, TC::Type{<: AbstractVector}) = has_gemv(TA, TB, TC)
-has_gmul(A, B, C) = has_gmul(typeof.(peel.((A, B, C)))...)
+
+has_gemm(TA::Type{<: SparseMatrixCSC},
+         TB::Type{<: StridedVecOrMat},
+         TC::Type{<: StridedVecOrMat}) = true
+
+has_gemv(TA::Type{<: SparseMatrixCSC},
+         TB::Type{<: StridedVector},
+         TC::Type{<: StridedVector}) = true
+
+
+has_gmul(TC::Type{<: AbstractMatrix}, TA::Type, TB::Type) = has_gemm(TA, TB, TC)
+has_gmul(TC::Type{<: AbstractVector}, TA::Type, TB::Type) = has_gemv(TA, TB, TC)
+has_gmul(C, A, B) = has_gmul(typeof.((C, A, B))...)
