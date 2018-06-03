@@ -1,5 +1,5 @@
 """
-    _mul!(Y, M, X)
+    _mul!([executor = M.executor], Y, M, X)
 
 Internal interface for `mul!(Y, M, X)` for the case `M` is a
 `PairedMatrices` and alike.  It is for *definition* and must not be
@@ -10,6 +10,9 @@ via `A_mul_B!`, `Ac_mul_Bc!`, etc., in Julia 0.6 (see interface06.jl).
 """
 function _mul! end
 
+_mul!(Y, M::PairedMatrices, X) = _mul!(M.executor, Y, M, X)
+
+
 const AdjOrTrOfPair = Union{<: Adjoint{<: Any, <: PairedMatrices},
                             <: Transpose{<: Any, <: PairedMatrices}}
 const AdjTrOrPair = Union{PairedMatrices, AdjOrTrOfPair}
@@ -17,12 +20,15 @@ const AdjTrOrPair = Union{PairedMatrices, AdjOrTrOfPair}
 # First convert Adjoint/Transpose to a pair and then "execute" it:
 _mul!(Y, M::AdjOrTrOfPair, X) = _mul!(Y, do_tr(M), X)
 
-_allocate_mul!(M, X::AbstractVector) = allocate!(M, size(M.B, 1))
-_allocate_mul!(M, X::AbstractMatrix) = allocate!(M, (size(M.B, 1), size(X, 2)))
+
+_allocate_mul!(executor, M, X::AbstractVector) =
+    allocate!(executor, size(M.B, 1))
+_allocate_mul!(executor, M, X::AbstractMatrix) =
+    allocate!(executor, (size(M.B, 1), size(X, 2)))
 
 
-function _mul!(Y, M::AddedMatrices, X)
-    b_out = _allocate_mul!(M, X)
+function _mul!(executor::DefaultExecutor, Y, M::AddedMatrices, X)
+    b_out = _allocate_mul!(executor, M, X)
     mul!(Y, M.A, X)
     mul!(b_out, M.B, X)
     Y .+= b_out
@@ -34,8 +40,8 @@ end
 # optimization.
 
 
-function _mul!(Y, M::MultipliedMatrices, X)
-    b_out = _allocate_mul!(M, X)
+function _mul!(executor::AllocatingExecutor, Y, M::MultipliedMatrices, X)
+    b_out = _allocate_mul!(executor, M, X)
     mul!(b_out, M.B, X)
     mul!(Y, M.A, b_out)
     return Y
