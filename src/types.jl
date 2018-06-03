@@ -1,17 +1,33 @@
 abstract type PairedMatrices{TE, TA, TB, EXR} <: AbstractMatrix{TE} end
 
 struct AddedMatrices{TE, TA, TB, EXR} <: PairedMatrices{TE, TA, TB, EXR}
+    m::Int                  # Number of rows (as in SparseMatrixCSC)
+    n::Int                  # Number of columns
     A::TA
     B::TB
     executor::EXR
 
-    function AddedMatrices(A::TA, B::TB,
+    function AddedMatrices(m::Integer, n::Integer, A::TA, B::TB,
                            executor::EXR = executor_for(A, B),
                            ) where {TA, TB, EXR}
-        @assert size(A) == size(B)
+        has_size(A) && @assert size(A) == (m, n)
+        has_size(B) && @assert size(B) == (m, n)
         TE = promote_type(eltype(A), eltype(B))
-        return new{TE, TA, TB, EXR}(A, B, executor)
+        return new{TE, TA, TB, EXR}(m, n, A, B, executor)
     end
+end
+
+function AddedMatrices(A::TA, B::TB,
+                       executor::EXR = executor_for(A, B),
+                       ) where {TA, TB, EXR}
+    if has_size(A)
+        dims = size(A)
+    elseif has_size(B)
+        dims = size(B)
+    else
+        error("Both A and B does not have size.")
+    end
+    return AddedMatrices(dims..., A, B, executor)
 end
 
 const added = AddedMatrices
@@ -75,7 +91,7 @@ Base.eltype(M::PairedMatrices) = promote_type(eltype(M.A),
                                               eltype(M.B))
 Base.length(M::PairedMatrices) = prod(size(M))
 
-Base.size(M::AddedMatrices, dim...) = size(M.A, dim...)
+Base.size(M::AddedMatrices) = (M.m, M.n)
 Base.getindex(M::AddedMatrices, i::Int) = M.A[i] + M.B[i]
 Base.getindex(M::AddedMatrices, I::Vararg{Int, N}) where N =
     getindex(M.A, I...) +

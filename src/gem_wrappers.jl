@@ -223,3 +223,12 @@ has_gemv(TA::Type{<: SparseMatrixCSC},
 has_gmul(TC::Type{<: AbstractMatrix}, TA::Type, TB::Type) = has_gemm(TA, TB, TC)
 has_gmul(TC::Type{<: AbstractVector}, TA::Type, TB::Type) = has_gemv(TA, TB, TC)
 has_gmul(C, A, B) = has_gmul(typeof.((C, A, B))...)
+
+has_mul(::Type, ::Type, ::Type) = false
+has_mul(::Type{<: AbstractVector},
+        ::Type{<: AbstractMatrix},
+        ::Type{<: AbstractVector}) = true
+has_mul(::Type{<: AbstractMatrix},
+        ::Type{<: AbstractMatrix},
+        ::Type{<: AbstractMatrix}) = true
+has_mul(C, A, B) = has_mul(typeof.((C, A, B))...)

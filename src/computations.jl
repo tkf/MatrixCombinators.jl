@@ -38,6 +38,29 @@ end
 # matrix A or B defines gemm!-like function, the definition in
 # [[./optimizations/gmul.jl]] is used.
 
+# It's more complicated to fallback to the above case when M.A or M.B
+# is an UniformScaling than to define the optimized version.  So let's
+# define the optimized version here.
+function _mul!(executor::DumbExecutor,
+               Y,
+               M::AddedMatrices{TE, <: UniformScaling},
+               X,
+               ) where {TE}
+    mul!(Y, M.B, X)
+    @. Y += M.A.λ * X
+    return Y
+end
+
+function _mul!(executor::DumbExecutor,
+               Y,
+               M::AddedMatrices{TE, TA, <: UniformScaling},
+               X,
+               ) where {TE, TA}
+    mul!(Y, M.A, X)
+    @. Y += M.B.λ * X
+    return Y
+end
+
 
 function _mul!(executor::AllocatingExecutor, Y, M::MultipliedMatrices, X)
     b_out = _allocate_mul!(executor, M, X)

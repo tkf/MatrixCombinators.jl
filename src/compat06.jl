@@ -15,6 +15,11 @@ end
 Adjoint(A::S) where {T, S <: AbstractMatrix{T}} = Adjoint{T,S}(A)
 Transpose(A::S) where {T, S <: AbstractMatrix{T}} = Transpose{T,S}(A)
 
+# Following:
+# https://github.com/JuliaLang/julia/blob/91d2071f0776ceb4c53bc95277ba967aaa0a5608/stdlib/LinearAlgebra/src/uniformscaling.jl#L66-L69
+Adjoint(A::UniformScaling) = adjoint(A)
+Transpose(A::UniformScaling) = transpose(A)
+
 const AdjOrTrans = Union{Adjoint, Transpose}
 
 Base.size(A::AdjOrTrans) = size(A.parent)

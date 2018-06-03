@@ -20,29 +20,36 @@ a_arrays = let
 end
 
 ab_arrays_default = [(A, B) for A in a_arrays, B in a_arrays][:]
+ab_arrays_added = vcat(ab_arrays_default, [
+    (A, I) for A in a_arrays
+], [
+    (I, B) for B in a_arrays
+])
 
 
 @testset "$combinator" for (combinator,
                             nonlazy,
+                            ab_arrays,
                             ) in
     [
         (MatrixCombinators.added,
          +,
+         ab_arrays_added,
          ),
         (MatrixCombinators.muled,
          *,
+         ab_arrays_default,
          ),
     ]
 
     @testset "cA=$cA, cB=$cB" for (cA, cB) in t_pairs
         f = (Y, A, B) -> mul!(Y, eager_t[cA](A), eager_t[cB](B))
-        for (A, B) in ab_arrays_default
+        for (A, B) in ab_arrays
 
+            m, n = size(combinator(A, B))
             x_arrays = [
-                collect(1:size(B, 2)),
-                let N = size(B, 2)
-                    reshape(collect(1:N^2), (N, N))
-                end,
+                collect(1:n),
+                reshape(collect(1:n^2), (n, n)),
             ]
             # TODO: non-square matrix
 
@@ -56,7 +63,7 @@ ab_arrays_default = [(A, B) for A in a_arrays, B in a_arrays][:]
                 M = combinator(A, B)
 
                 TE = promote_type(eltype(A), eltype(B), eltype(X))
-                desired = empty_array(Array{TE}, (size(A, 1), size(X′, 2)))
+                desired = empty_array(Array{TE}, (m, size(X′, 2)))
                 if X isa AbstractVector
                     desired = desired[:, 1]
                 end
@@ -74,7 +81,7 @@ ab_arrays_default = [(A, B) for A in a_arrays, B in a_arrays][:]
 
                     v = X′[:, 1]
 
-                    desired = empty_array(Array{TE}, size(A, 1))
+                    desired = empty_array(Array{TE}, m)
                     actual = similar(desired)
 
                     f(desired, nonlazy(A, B), v)
@@ -89,11 +96,10 @@ ab_arrays_default = [(A, B) for A in a_arrays, B in a_arrays][:]
     @testset "*" begin
         for (A, B) in ab_arrays_default
 
+            _, n = size(combinator(A, B))
             x_arrays = [
-                collect(1:size(B, 2)),
-                let N = size(B, 2)
-                    reshape(collect(1:N^2), (N, N))
-                end,
+                collect(1:n),
+                reshape(collect(1:n^2), (n, n)),
             ]
             # TODO: non-square matrix
 

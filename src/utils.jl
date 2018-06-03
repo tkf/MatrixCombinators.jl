@@ -20,6 +20,9 @@ empty_array(::Type{<: SparseMatrixCSC{T}}, dims) where {T} =
     spzeros(T, dims...)
 
 
+has_size(A) = length(methods(size, (typeof(A),))) > 0
+
+
 peel(A::Union{Adjoint, Transpose}) = A.parent
 peel(A) = A
 
