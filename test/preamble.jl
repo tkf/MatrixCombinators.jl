@@ -6,8 +6,7 @@ end
 
 using MatrixCombinators
 using MatrixCombinators: mul!, adjoint, Adjoint, Transpose, empty_array
-using MatrixCombinators.LinearAlgebra: transpose,
-    A_mul_B!, A_mul_Bt!, At_mul_Bt!, A_mul_Bc!, Ac_mul_Bc!
+using MatrixCombinators.LinearAlgebra: transpose
 
 eager_t = Dict('N' => identity, 'C' => adjoint, 'T' => transpose)
 lazy_t = Dict('N' => identity, 'C' => Adjoint, 'T' => Transpose)

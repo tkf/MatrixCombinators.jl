@@ -1,24 +1,5 @@
 include("preamble.jl")
 
-added_ops = :(
-    LinearAlgebra.A_mul_B!,
-    LinearAlgebra.A_mul_Bt!, LinearAlgebra.At_mul_B!, LinearAlgebra.At_mul_Bt!,
-    LinearAlgebra.A_mul_Bc!, LinearAlgebra.Ac_mul_B!, LinearAlgebra.Ac_mul_Bc!,
-).args
-
-muled_ops_nt = :(
-    LinearAlgebra.A_mul_B!,
-    LinearAlgebra.A_mul_Bt!,
-    LinearAlgebra.A_mul_Bc!,
-).args
-
-muled_ops_tr = :(
-    LinearAlgebra.At_mul_B!, LinearAlgebra.At_mul_Bt!,
-    LinearAlgebra.Ac_mul_B!, LinearAlgebra.Ac_mul_Bc!,
-).args
-
-muled_ops = (muled_ops_nt..., muled_ops_tr...)
-
 
 range_mat(n = 3, m = n) = reshape(collect(1:n * m), (n, m))
 
@@ -43,21 +24,18 @@ ab_arrays_default = [(A, B) for A in a_arrays, B in a_arrays][:]
 
 @testset "$combinator" for (combinator,
                             nonlazy,
-                            ops,
                             ) in
     [
         (MatrixCombinators.added,
          +,
-         added_ops,
          ),
         (MatrixCombinators.muled,
          *,
-         muled_ops,
          ),
     ]
 
-    @testset "$name" for name in ops
-        f = eval(MatrixCombinators, name)
+    @testset "cA=$cA, cB=$cB" for (cA, cB) in t_pairs
+        f = (Y, A, B) -> mul!(Y, eager_t[cA](A), eager_t[cB](B))
         for (A, B) in ab_arrays_default
 
             x_arrays = [
@@ -69,13 +47,7 @@ ab_arrays_default = [(A, B) for A in a_arrays, B in a_arrays][:]
             # TODO: non-square matrix
 
             for X in x_arrays
-                if f in (A_mul_Bt!, At_mul_Bt!)
-                    X′ = transpose(X)
-                elseif f in (A_mul_Bc!, Ac_mul_Bc!)
-                    X′ = X'
-                else
-                    X′ = X
-                end
+                X′ = eager_t[cB](X)
                 if X isa AbstractVector && X !== X′
                     continue
                 end
@@ -96,7 +68,7 @@ ab_arrays_default = [(A, B) for A in a_arrays, B in a_arrays][:]
                 @test actual ≈ desired
 
                 if ! (X isa AbstractVector)
-                    if f in (A_mul_Bt!, At_mul_Bt!, A_mul_Bc!, Ac_mul_Bc!)
+                    if cB in "TC"
                         continue
                     end
 

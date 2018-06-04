@@ -12,4 +12,5 @@ let in_code = false, code = []
 end
 
 include("preamble.jl")
+using MatrixCombinators.LinearAlgebra: A_mul_B!
 include("README.jl")
