@@ -46,23 +46,24 @@ x = ones(2)
 Here, `(A * x) + (B * x)` is actually computed instead.
 Multiplication can be more efficient when underlying matrices `A` and
 `B` have specific structures (e.g., `SparseMatrixCSC`,
-`BandedMatrix`).  In this case, using `A*_mul_B*!` variants makes more
-sense to avoid memory-allocation.  Indeed, `MatrixCombinators`
-supports all variants (but see [Limitations](#limitations)):
+`BandedMatrix`).  In this case, using `mul!` (or `A*_mul_B*!` variants
+in Julia 0.6) makes more sense to avoid memory-allocation.  Thus,
+`MatrixCombinators` supports all variants (but see
+[Limitations](#limitations)):
 
 ```julia
 y = similar(x)
-A_mul_B!(y, M, x)
+mul!(y, M, x)
 @test y == D * x
 ```
 
-Matrix-matrix `A*_mul_B*!(Y, M, X)` multiplication is also supported:
+Matrix-matrix `mul!(Y, M, X)` multiplication is also supported:
 
 ```julia
 X = [0 1 1
      1 0 1]
 Y = similar(X)
-A_mul_B!(Y, M, X)
+mul!(Y, M, X)
 @test Y == (A .+ B) * X
 ```
 
@@ -71,7 +72,7 @@ A_mul_B!(Y, M, X)
 ```julia
 M = MatrixCombinators.muled(A, B)
 D = A * B
-A_mul_B!(y, M, x)
+mul!(y, M, x)
 @test y == D * x
 ```
 
@@ -127,7 +128,7 @@ end
 more code...)
 
 * Internal cache is used.
-* No support for `A_ldiv_B!` etc.
+* No support for `ldiv!` etc.
 
 
 [travis-img]: https://travis-ci.org/tkf/MatrixCombinators.jl.svg?branch=master
