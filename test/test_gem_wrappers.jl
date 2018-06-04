@@ -1,10 +1,7 @@
 include("preamble.jl")
 
-using MatrixCombinators: _gemv!, _gemm!, gmul!, has_gemv, has_gemm, has_gmul,
-    adjoint, transpose, Adjoint, Transpose, empty_array
+using MatrixCombinators: _gemv!, _gemm!, gmul!, has_gemv, has_gemm, has_gmul
 
-conc = Dict('N' => identity, 'C' => adjoint, 'T' => transpose)
-lazy = Dict('N' => identity, 'C' => Adjoint, 'T' => Transpose)
 
 @testset "gemv!" begin
     for (seed, (n, m)) in enumerate([(3, 3), (3, 5), (11, 7)])
@@ -15,7 +12,7 @@ lazy = Dict('N' => identity, 'C' => Adjoint, 'T' => Transpose)
         α = randn(rng)
         β = randn(rng)
         for c in "NCT"
-            t = conc[c]
+            t = eager_t[c]
             A_ = Matrix(t(A))
             gemv_desired = α .* (t(A_) * x) .+ β .* y
             gemv_actual = copy(y)
@@ -25,7 +22,7 @@ lazy = Dict('N' => identity, 'C' => Adjoint, 'T' => Transpose)
 
             gmul_actual = t(A_) * x .+ y
             gmul_desired = copy(y)
-            gmul!(gmul_desired, lazy[c](A_), x)
+            gmul!(gmul_desired, lazy_t[c](A_), x)
             @test gmul_actual ≈ gmul_desired
         end
     end
@@ -41,12 +38,9 @@ end
         C = randn(rng, (n, k))
         α = randn(rng)
         β = randn(rng)
-        for cA in "NCT", cB in "NCT"
-            tA = conc[cA]
-            tB = conc[cB]
-            if cA != 'N' && cA != cB
-                continue
-            end
+        for (cA, cB) in t_pairs
+            tA = eager_t[cA]
+            tB = eager_t[cB]
             A_ = Matrix(tA(A))
             B_ = Matrix(tB(B))
             gemm_desired = α .* (tA(A_) * tB(B_)) .+ β .* C
@@ -57,7 +51,7 @@ end
 
             gmul_actual = tA(A_) * tB(B_) .+ C
             gmul_desired = copy(C)
-            gmul!(gmul_desired, lazy[cA](A_), lazy[cB](B_))
+            gmul!(gmul_desired, lazy_t[cA](A_), lazy_t[cB](B_))
             @test gmul_actual ≈ gmul_desired
         end
     end
