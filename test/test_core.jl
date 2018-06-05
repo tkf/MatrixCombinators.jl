@@ -56,7 +56,7 @@ ab_arrays_default = [(A, B) for A in a_arrays, B in a_arrays][:]
                 M = combinator(A, B)
 
                 TE = promote_type(eltype(A), eltype(B), eltype(X))
-                desired = Array{TE}((size(A, 1), size(X′, 2)))
+                desired = empty_array(Array{TE}, (size(A, 1), size(X′, 2)))
                 if X isa AbstractVector
                     desired = desired[:, 1]
                 end
@@ -74,7 +74,7 @@ ab_arrays_default = [(A, B) for A in a_arrays, B in a_arrays][:]
 
                     v = X′[:, 1]
 
-                    desired = Array{TE}(size(A, 1))
+                    desired = empty_array(Array{TE}, size(A, 1))
                     actual = similar(desired)
 
                     f(desired, nonlazy(A, B), v)
@@ -147,8 +147,8 @@ ab_arrays_default = [(A, B) for A in a_arrays, B in a_arrays][:]
             end
         end
 
-        for TA in [Int, Float64, Complex128],
-            TB in [Int, Float64, Complex128]
+        for TA in [Int, Float64, ComplexF64],
+            TB in [Int, Float64, ComplexF64]
 
             A = Array{TA}(range_mat())
             B = Array{TB}(range_mat())

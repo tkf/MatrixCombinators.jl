@@ -91,7 +91,7 @@ some_array(T::Type{<: AbstractVector}) = empty_array(T, (2,))
     end
 
     for (element_types, abc_types, yes) in [
-            ((Float64, Float32, Complex128, Complex64),
+            ((Float64, Float32, ComplexF64, ComplexF32),
              abc_types_with_gmul,
              true),
             ((Int, BigFloat, BigInt),

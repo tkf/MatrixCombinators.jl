@@ -1,11 +1,16 @@
 @static if VERSION < v"0.7.0-DEV.2005"
     using Base.Test
+    const ComplexF64 = Complex128
+    const ComplexF32 = Complex64
 else
     using Test
+    using Random
+    import Pkg
 end
 
 using MatrixCombinators
-using MatrixCombinators: mul!, adjoint, Adjoint, Transpose, empty_array
+using MatrixCombinators: mul!, adjoint, Adjoint, Transpose, empty_array,
+    SparseMatrixCSC, sparse
 using MatrixCombinators.LinearAlgebra: transpose
 
 eager_t = Dict('N' => identity, 'C' => adjoint, 'T' => transpose)

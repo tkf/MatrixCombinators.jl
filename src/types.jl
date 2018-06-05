@@ -141,7 +141,7 @@ end
 
 function _materialize(T, M::MultipliedMatrices)
     Y = empty_array(T, size(M))
-    A_mul_B!(Y, M.A, M.B)
+    mul!(Y, M.A, M.B)
     return Y
 end
 
