@@ -130,6 +130,43 @@ function gmul!(Y::AbstractVector{TY},
     _gemv!(tA, alpha, peel(A), B, beta, Y)
 end
 
+# Short-circuit _gemm! for sparse matrix/vector in Julia 0.7
+@static if VERSION >= v"0.7.0-"
+"""
+When `A` isa `SparseMatrixCSC`, `gmul!` directly calls
+`SparseMatrixCSC`'s GEMM-like interface.
+
+See:
+- [stdlib/SparseArrays/src/linalg.jl (v0.7.0-alpha)](https://github.com/JuliaLang/julia/blob/v0.7.0-alpha/stdlib/SparseArrays/src/linalg.jl#L32)
+"""
+function gmul!(Y::StridedVecOrMat,
+               A::Union{SparseMatrixCSC,
+                        Adjoint{<: Any, <: SparseMatrixCSC},
+                        Transpose{<: Any, <: SparseMatrixCSC}},
+               B::StridedVecOrMat,
+               alpha,
+               beta,
+               )
+    mul!(Y, A, B, alpha, beta)
+end
+
+"""
+When `B` isa `AbstractSparseVector`, `gmul!` directly calls
+`SparseMatrixCSC`'s GEMM-like interface.
+
+See:
+- [stdlib/SparseArrays/src/sparsevector.jl (v0.7.0-alpha)](https://github.com/JuliaLang/julia/blob/v0.7.0-alpha/stdlib/SparseArrays/src/sparsevector.jl#L1477)
+"""
+function gmul!(Y::AbstractVector,
+               A::StridedMatrix,
+               B::AbstractSparseVector,
+               alpha,
+               beta,
+               )
+    mul!(Y, A, B, alpha, beta)
+end
+end
+
 
 """
     amul!(Y, A, B)
