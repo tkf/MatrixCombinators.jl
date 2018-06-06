@@ -8,6 +8,45 @@ else
     import Pkg
 end
 
+# Monkey patch for resolving mul!(::Matrix, ::Diagonal, ::Adjoint) ambiguity.
+# https://github.com/JuliaLang/julia/pull/27405
+@static if VERSION >= v"0.7-"
+    import LinearAlgebra
+    using LinearAlgebra: Diagonal, Adjoint, Transpose
+
+    let A = Diagonal([100, 200, 300])
+        B = reshape(collect(1:9), (3, 3))
+        Y = zeros(3, 3)
+
+        need_def = try
+            LinearAlgebra.mul!(Y, A, B')
+            false
+        catch err
+            if ! (err isa MethodError)
+                rethrow()
+            end
+            true
+        end
+
+        if need_def
+            LinearAlgebra.mul!(out::AbstractMatrix, A::Diagonal,
+                               in::Adjoint{<:Any, <: AbstractMatrix}) =
+                out .= A.diag .* in
+            LinearAlgebra.mul!(out::AbstractMatrix, A::Diagonal,
+                               in::Transpose{<:Any, <: AbstractMatrix}) =
+                out .= A.diag .* in
+            LinearAlgebra.mul!(out::AbstractMatrix,
+                               A::Adjoint{<:Any, <:Diagonal},
+                               in::Adjoint{<:Any, <:AbstractMatrix}) =
+                out .= adjoint.(A.parent.diag) .* in
+            LinearAlgebra.mul!(out::AbstractMatrix,
+                               A::Transpose{<:Any, <:Diagonal},
+                               in::Transpose{<:Any, <:AbstractMatrix}) =
+                out .= transpose.(A.parent.diag) .* in
+        end
+    end
+end
+
 using MatrixCombinators
 using MatrixCombinators: mul!, adjoint, Adjoint, Transpose, empty_array,
     SparseMatrixCSC, sparse

@@ -20,23 +20,30 @@ a_arrays = let
 end
 
 ab_arrays_default = [(A, B) for A in a_arrays, B in a_arrays][:]
+ab_arrays_muled = vcat(ab_arrays_default, [
+    # Testing [[../src/optimizations/sparse.jl::DiagTimesCSC]]:
+    (Diagonal([100, 200, 300]), sparse(range_mat())),
+])
 
 
 @testset "$combinator" for (combinator,
                             nonlazy,
+                            ab_arrays,
                             ) in
     [
         (MatrixCombinators.added,
          +,
+         ab_arrays_default,
          ),
         (MatrixCombinators.muled,
          *,
+         ab_arrays_muled,
          ),
     ]
 
     @testset "cA=$cA, cB=$cB" for (cA, cB) in t_pairs
         f = (Y, A, B) -> mul!(Y, eager_t[cA](A), eager_t[cB](B))
-        for (A, B) in ab_arrays_default
+        for (A, B) in ab_arrays
 
             x_arrays = [
                 collect(1:size(B, 2)),
