@@ -30,8 +30,6 @@ function AddedMatrices(A::TA, B::TB,
     return AddedMatrices(dims..., A, B, executor)
 end
 
-const added = AddedMatrices
-
 struct MultipliedMatrices{TE, TA, TB, EXR} <: PairedMatrices{TE, TA, TB, EXR}
     A::TA
     B::TB
@@ -45,8 +43,6 @@ struct MultipliedMatrices{TE, TA, TB, EXR} <: PairedMatrices{TE, TA, TB, EXR}
         return new{TE, TA, TB, EXR}(A, B, executor)
     end
 end
-
-const muled = MultipliedMatrices
 
 
 # --- Utilities

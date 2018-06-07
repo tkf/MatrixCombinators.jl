@@ -7,6 +7,7 @@ include("executors.jl")
 include("types.jl")
 include("computations.jl")
 include("optimizations.jl")
+include("builders.jl")
 
 @static if VERSION < v"0.7.0-"
     include("interface06.jl")
