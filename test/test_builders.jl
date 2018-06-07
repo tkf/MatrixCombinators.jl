@@ -21,3 +21,25 @@ include("preamble.jl")
     @test size(added(ones(2, 3), I)) == (2, 3)
     @test size(added(ones(2, 3), I), 2, 1) == (3, 2)
 end
+
+@testset "muled" begin
+    muled = MatrixCombinators.muled
+    MultipliedMatrices = MatrixCombinators.MultipliedMatrices
+
+    @test muled(2I, 3I)::UniformScaling == 6I
+    @test muled(2I, 3)::UniformScaling == 6I
+    @test muled(2, 3I)::UniformScaling == 6I
+    @test muled(2, 3)::UniformScaling == 6I
+
+    @test muled(1, ones(2, 3)) isa MultipliedMatrices{Float64, <:UniformScaling}
+    @test muled(I, ones(2, 3)) isa MultipliedMatrices{Float64, <:UniformScaling}
+    @test size(muled(I, ones(2, 3))) == (2, 3)
+    @test size(muled(I, ones(2, 3)), 2, 1) == (3, 2)
+
+    @test muled(ones(Int, 2, 3), 4) isa MultipliedMatrices{Int, <:Matrix,
+                                                      <:UniformScaling}
+    @test muled(ones(Int, 2, 3), I) isa MultipliedMatrices{Int, <:Matrix,
+                                                      <:UniformScaling}
+    @test size(muled(ones(2, 3), I)) == (2, 3)
+    @test size(muled(ones(2, 3), I), 2, 1) == (3, 2)
+end

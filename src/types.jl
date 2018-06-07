@@ -31,17 +31,40 @@ function AddedMatrices(A::TA, B::TB,
 end
 
 struct MultipliedMatrices{TE, TA, TB, EXR} <: PairedMatrices{TE, TA, TB, EXR}
+    m::Int                  # Number of rows (as in SparseMatrixCSC)
+    n::Int                  # Number of columns
     A::TA
     B::TB
     executor::EXR
 
-    function MultipliedMatrices(A::TA, B::TB,
+    function MultipliedMatrices(m::Integer, n::Integer, A::TA, B::TB,
                                 executor::EXR = executor_for(A, B),
                                 ) where {TA, TB, EXR}
-        @assert size(A, 2) == size(B, 1)
+        if has_size(A)
+            A_dims = (m, has_size(B) ? size(B, 1) : n)
+            @assert size(A) == A_dims
+        end
+        if has_size(B)
+            B_dims = (has_size(A) ? size(A, 2) : m, n)
+            @assert size(B) == B_dims
+        end
         TE = promote_type(eltype(A), eltype(B))
-        return new{TE, TA, TB, EXR}(A, B, executor)
+        return new{TE, TA, TB, EXR}(m, n, A, B, executor)
     end
+end
+
+function MultipliedMatrices(A::TA, B::TB,
+                            executor::EXR = executor_for(A, B),
+                            ) where {TA, TB, EXR}
+    if A isa UniformScaling
+        dims = size(B)
+    elseif B isa UniformScaling
+        dims = size(A)
+    else
+        dims = (size(A, 1), size(B, 2))
+    end
+    TE = promote_type(eltype(A), eltype(B))
+    return MultipliedMatrices(dims..., A, B, executor)
 end
 
 
@@ -86,8 +109,8 @@ allocate!(M::PairedMatrices, dims) = allocate!(M.executor, dims)
 Base.eltype(M::PairedMatrices) = promote_type(eltype(M.A),
                                               eltype(M.B))
 Base.length(M::PairedMatrices) = prod(size(M))
+Base.size(M::PairedMatrices) = (M.m, M.n)
 
-Base.size(M::AddedMatrices) = (M.m, M.n)
 Base.getindex(M::AddedMatrices, i::Int) = M.A[i] + M.B[i]
 Base.getindex(M::AddedMatrices, I::Vararg{Int, N}) where N =
     getindex(M.A, I...) +
@@ -98,16 +121,6 @@ preferred_style(::IndexStyle, ::IndexStyle) = IndexCartesian()
 
 Base.IndexStyle(::Type{<:AddedMatrices{<: Any, TA, TB}}) where {TA, TB} =
     preferred_style(IndexStyle(TA), IndexStyle(TB))
-
-Base.size(M::MultipliedMatrices) = (size(M.A, 1), size(M.B, 2))
-
-function Base.size(M::MultipliedMatrices, i::Integer)
-    if i == 1
-        size(M.A, 1)
-    else
-        size(M.B, i)  # if i > 2, this returns 1
-    end
-end
 
 function Base.getindex(M::MultipliedMatrices, i::Int, j::Int)
     x = spzeros(Int, size(M, 2))
