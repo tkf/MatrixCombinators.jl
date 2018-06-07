@@ -20,11 +20,13 @@ a_arrays = let
 end
 
 ab_arrays_default = [(A, B) for A in a_arrays, B in a_arrays][:]
-ab_arrays_added = vcat(ab_arrays_default, [
+ab_arrays_default = vcat(ab_arrays_default, [
     (A, I) for A in a_arrays
 ], [
     (I, B) for B in a_arrays
 ])
+ab_arrays_added = ab_arrays_default
+ab_arrays_muled = ab_arrays_default
 
 
 @testset "$combinator" for (combinator,
@@ -38,7 +40,7 @@ ab_arrays_added = vcat(ab_arrays_default, [
          ),
         (MatrixCombinators.muled,
          *,
-         ab_arrays_default,
+         ab_arrays_muled,
          ),
     ]
 

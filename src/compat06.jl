@@ -39,3 +39,5 @@ _tstr(::Type) = ""
     b = B <: Union{Adjoint, Transpose} ? :(B.parent) : :B
     :($f(Y, $a, $b))
 end
+
+const rmul! = scale!

@@ -69,15 +69,39 @@ function _mul!(executor::AllocatingExecutor, Y, M::MultipliedMatrices, X)
     return Y
 end
 
+function _mul!(executor::AllocatingExecutor,
+               Y,
+               M::MultipliedMatrices{TE, <: UniformScaling},
+               X,
+               ) where {TE}
+    mul!(Y, M.B, X)
+    rmul!(Y, M.A.λ)
+    return Y
+end
+
+function _mul!(executor::AllocatingExecutor,
+               Y,
+               M::MultipliedMatrices{TE, TA, <: UniformScaling},
+               X,
+               ) where {TE, TA}
+    mul!(Y, M.A, X)
+    rmul!(Y, M.B.λ)
+    return Y
+end
+
+# TODO: improve
+out_prototype(M) = M.A
+out_prototype(M::PairedMatrices{<: Any, <: UniformScaling}) = M.B
+
 
 function Base.:*(M::PairedMatrices, x::AbstractVector)
-    y = similar(@view M.A[:, 1])
+    y = similar(out_prototype(M), size(M, 1))
     mul!(y, M, x)
     return y
 end
 
 function Base.:*(M::PairedMatrices, X::AbstractMatrix)
-    Y = similar(M.A, (size(M, 1), size(X, 2)))  # TODO: improve
+    Y = similar(out_prototype(M), (size(M, 1), size(X, 2)))
     mul!(Y, M, X)
     return Y
 end

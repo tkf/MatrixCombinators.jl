@@ -116,11 +116,25 @@ Base.getindex(M::AddedMatrices, I::Vararg{Int, N}) where N =
     getindex(M.A, I...) +
     getindex(M.B, I...)
 
+Base.getindex(M::AddedMatrices{<: Any, <: UniformScaling},
+              i::Int, j::Int) =
+    M.B[i, j] + (i == j ? M.A.λ : zero(M.A.λ))
+
+Base.getindex(M::AddedMatrices{<: Any, <: Any, <: UniformScaling},
+              i::Int, j::Int) =
+    M.A[i, j] + (i == j ? M.B.λ : zero(M.B.λ))
+
 preferred_style(t::T, ::T) where {T <: IndexStyle} = t
 preferred_style(::IndexStyle, ::IndexStyle) = IndexCartesian()
 
 Base.IndexStyle(::Type{<:AddedMatrices{<: Any, TA, TB}}) where {TA, TB} =
     preferred_style(IndexStyle(TA), IndexStyle(TB))
+
+Base.IndexStyle(::Type{<: AddedMatrices{<: Any, <: UniformScaling}}) =
+    IndexCartesian()
+
+Base.IndexStyle(::Type{<: AddedMatrices{<: Any, <: Any, <: UniformScaling}}) =
+    IndexCartesian()
 
 function Base.getindex(M::MultipliedMatrices, i::Int, j::Int)
     x = spzeros(Int, size(M, 2))
@@ -129,6 +143,14 @@ function Base.getindex(M::MultipliedMatrices, i::Int, j::Int)
     _mul!(y, M, x)
     return y[i]
 end
+
+Base.getindex(M::MultipliedMatrices{<: Any, <: UniformScaling},
+              i::Int, j::Int) =
+    M.B[i, j] * M.A.λ
+
+Base.getindex(M::MultipliedMatrices{<: Any, <: Any, <: UniformScaling},
+              i::Int, j::Int) =
+    M.A[i, j] * M.B.λ
 
 Base.IndexStyle(::Type{<:MultipliedMatrices}) = IndexCartesian()
 
@@ -164,11 +186,23 @@ function _materialize(T, M::AddedMatrices)
     return Y
 end
 
+_materialize(T, M::AddedMatrices{<: Any, <: UniformScaling}) =
+    M.A + M.B
+
+_materialize(T, M::AddedMatrices{<: Any, <: Any, <: UniformScaling}) =
+    M.A + M.B
+
 function _materialize(T, M::MultipliedMatrices)
     Y = empty_array(T, size(M))
     mul!(Y, M.A, M.B)
     return Y
 end
+
+_materialize(T, M::MultipliedMatrices{<: Any, <: UniformScaling}) =
+    M.A * M.B
+
+_materialize(T, M::MultipliedMatrices{<: Any, <: Any, <: UniformScaling}) =
+    M.A * M.B
 
 
 Base.convert(T::Type{Matrix}, M::PairedMatrices) = materialize(T, M)
