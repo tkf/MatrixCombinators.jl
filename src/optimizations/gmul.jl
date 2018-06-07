@@ -1,4 +1,8 @@
 function _mul!(executor::DefaultExecutor, Y, M::AddedMatrices, X)
+    # TODO: It would be nice if the "execution strategy" is decided at
+    # the time AddedMatrices is constructed and then embedded in the
+    # type (parameter).  But probably there is not so much gain here
+    # since the matrices are assumed to be big anyway.
     if has_gmul(Y, M.B, X) && has_mul(Y, M.A, X)
         mul!(Y, M.A, X)
         amul!(Y, M.B, X)
