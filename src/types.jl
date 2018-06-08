@@ -99,6 +99,9 @@ do_tr(M::Transpose{<: Any, <: MultipliedMatrices}) =
 
 do_tr(M) = M
 
+do_tr(M::Adjoint{<: Any, <: UniformScaling}) = adjoint(M.parent)
+do_tr(M::Transpose{<: Any, <: UniformScaling}) = transpose(M.parent)
+
 
 allocate!(M::PairedMatrices, dims) = allocate!(M.executor, dims)
 
